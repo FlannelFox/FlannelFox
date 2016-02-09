@@ -21,7 +21,6 @@ setup(name = 'FlannelFox',
       install_requires = [
         "requests",
         "beautifulsoup4",
-        "chardet",
-        "HTMLParser"
+        "chardet"
 	    ]
 )
