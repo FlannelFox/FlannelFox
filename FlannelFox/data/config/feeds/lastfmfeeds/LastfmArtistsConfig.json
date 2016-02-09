@@ -1,0 +1,35 @@
+[
+  {
+    "username": "last-fm-user-name",
+    "api_key": "",
+    "list_name": "your-list-name",
+    "type": "music",
+    "feedDestination": "###DOWNLOAD_DIR###/finished/music",
+    "minorFeeds": [
+      {
+        "url": "http://site.com/rss",
+        "minTime": "24",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss",
+        "minTime": "72",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss?somefiler=1",
+        "minTime": "24",
+        "minRatio": "1.5"
+      }
+    ],
+    "filters": {
+      "exclude": [
+        {"wordMatch": "scene"}
+      ],
+      "include": [
+        {"quality": "v0vbr"},
+        {"codec": "mp3"}
+      ]
+    }
+  }
+]

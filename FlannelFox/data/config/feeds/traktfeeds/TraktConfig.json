@@ -1,0 +1,138 @@
+[
+  {
+    "username": "trakt-user-name",
+    "api_key": "",
+    "list_name": "your-list-name",
+    "type": "tv",
+    "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+    "minorFeeds": [
+      {
+        "url": "http://site.com/rss",
+        "minTime": "24",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss",
+        "minTime": "72",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss?somefiler=1",
+        "minTime": "24",
+        "minRatio": "1.5"
+      }
+    ],
+    "filters": {
+      "exclude": [
+        {
+          "source": "bluray"
+        },
+        {
+          "source": "brrip"
+        },
+        {
+          "source": "bdrip"
+        },
+        {
+          "source": "dvdrip"
+        },
+        {
+          "codec": "x264-hi10p"
+        }
+      ],
+      "include": [
+        {
+          "quality": "720p"
+        }
+      ]
+    }
+  },
+  {
+    "username": "trakt-user-name",
+    "api_key": "",
+    "list_name": "your-list-name",
+    "type": "tv",
+    "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+    "minorFeeds": [
+      {
+        "url": "http://site.com/rss",
+        "minTime": "24",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss",
+        "minTime": "72",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss?somefiler=1",
+        "minTime": "24",
+        "minRatio": "1.5"
+      }
+    ],
+    "filters": {
+      "exclude": [
+        {
+          "codec": "x264-hi10p"
+        }
+      ],
+      "include": [
+        {
+          "quality": "720p"
+        },
+        {
+          "source": "webdl"
+        }
+      ]
+    }
+  },
+  {
+    "username": "trakt-user-name",
+    "api_key": "",
+    "list_name": "your-list-name",
+    "type": "tv",
+    "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+    "like": true,
+    "minorFeeds": [
+      {
+        "url": "http://site.com/rss",
+        "minTime": "24",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss",
+        "minTime": "72",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss?somefiler=1",
+        "minTime": "24",
+        "minRatio": "1.5"
+      }
+    ],
+    "filters": {
+      "exclude": [
+        {
+          "source": "bluray"
+        },
+        {
+          "source": "brrip"
+        },
+        {
+          "source": "bdrip"
+        },
+        {
+          "source": "dvdrip"
+        },
+        {
+          "codec": "x264-hi10p"
+        }
+      ],
+      "include": [
+        {
+          "quality": "720p"
+        }
+      ]
+    }
+  }
+]
