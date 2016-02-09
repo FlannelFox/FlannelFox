@@ -14,23 +14,5 @@ Requirements/Dependencies
 =========================
 Python 2.7
 * requests
-* bs4
+* beautifulsoup4
 * chardet
-* ctypes
-* os
-* platform
-* sys
-* subprocess
-* re
-* math
-* time
-* zlib
-* xml
-* multiprocessing
-* urllib3
-* datetime
-* random
-* json
-* sqlite3
-* string
-* HTMLParser
