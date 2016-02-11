@@ -4,7 +4,7 @@
 #
 # TODO:        Move the reading of config xml into this file
 #              Move some setting into external xml file
-#              Move the config files to ~/.FlannelFox
+#              Move the config files to ~/.flannelfox
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
@@ -19,6 +19,7 @@ from multiprocessing import cpu_count as PYTHON_CPU_COUNT
 import requests
 from bs4 import BeautifulSoup
 
+import flannelfox
 
 # #############################################################################
 # Location of user's home directory
@@ -46,73 +47,10 @@ print "Application started, using {0} threads to fetch feeds".format(CPU_COUNT)
 
 
 # #############################################################################
-# Files and other path related variables
-# TODO: Consider moving these to some other file that can then be included
-# so users do not have to muck about in here.
-# #############################################################################
-
-# Location to look for config files and DB, no trailing slash
-APP_PATH = HOME_DIR+ur"/tools"
-
-# Config File Path
-# CONFIG_PATH = HOME_DIR+ur"/tools/config"
-# TODO: Update setup to create and use this folder
-PRIVATE_PATH = HOME_DIR+ur"/.FlannelFox"
-CONFIG_PATH = PRIVATE_PATH+ur"/config"
-
-# Tools File Path
-TOOLS_PATH = HOME_DIR+ur"/tools"
-
-# Location of settings file
-SETTINGS_CONFIG_FILE = CONFIG_PATH+ur"/python.inc"
-
-# Location of Feeds
-FEED_CONFIG_FOLDER = CONFIG_PATH+ur"/feeds"
-
-# Location of RSS feed file
-# TODO: Convert this to JSON
-RSS_CONFIG_FOLDER = FEED_CONFIG_FOLDER+"/rssfeeds"
-FEED_CONFIG_FILE = CONFIG_PATH+ur"/FeedConfig.xml"
-
-# Location of Last.FM feed file
-LAST_FM_ARTISTS_CONFIG_FOLDER = FEED_CONFIG_FOLDER+"/lastfmfeeds"
-LAST_FM_ARTISTS_CONFIG_FILE = CONFIG_PATH+ur"/LastfmArtistsConfig.json"
-LAST_FM_ARTISTS_CONFIG_CACHE_DIR = CONFIG_PATH+ur"/LastfmArtistsConfigCache"
-LAST_FM_API = "https://ws.audioscrobbler.com/2.0/"
-
-# Location of Trakt feed file
-TRAKT_CONFIG_FOLDER = FEED_CONFIG_FOLDER+"/traktfeeds"
-TRAKT_CONFIG_FILE = CONFIG_PATH+ur"/TraktConfig.json"
-TRAKT_CONFIG_CACHE_DIR = CONFIG_PATH+ur"/TraktConfigCache"
-TRAKT_API = "https://api-v2launch.trakt.tv"
-
-# Database info
-# TODO: Move the .db file into the .FlannelFox dir
-TORRENT_DB = PRIVATE_PATH+ur"/FlannelFox.db"
-QUEUED_TORRENTS_TABLE = ur"QueuedTorrents"
-ADDED_TORRENTS_VIEW = ur"AddedTorrentsView"
-QUEUED_TORRENTS_VIEW = ur"QueuedTorrentsView"
-TV_TORRENTS_VIEW = ur"TVTorrentsView"
-MOVIE_TORRENTS_VIEW = ur"MovieTorrentsView"
-MUSIC_TORRENTS_VIEW = ur"MusicTorrentsView"
-GENERIC_TORRENTS_VIEW = ur"GenericTorrentsView"
-# #############################################################################
-
-
-
-# #############################################################################
 # Include Python Settings from the config dir
 # TODO: Document here what is coming in from this point and turn into a json import
 # #############################################################################
-execfile(SETTINGS_CONFIG_FILE)
-# #############################################################################
-
-
-
-# #############################################################################
-# Append the FlannelFox Folder to the python path
-# #############################################################################
-sys.path.append(APP_PATH)
+# execfile(flannelfox.settings['files']['settingsConfigFile'])
 # #############################################################################
 
 
@@ -123,7 +61,7 @@ sys.path.append(APP_PATH)
 # debian style script that accepts start,stop,restart as parameters
 # TODO: Implement this in some way or remove it!
 # #############################################################################
-# TORRENT_DAEMON_INIT = TOOLS_PATH+ur"/transmission-init"
+# TORRENT_DAEMON_INIT = flannelfox.settings['files']['toolsDir']+ur"/transmission-init"
 # #############################################################################
 
 
@@ -215,7 +153,7 @@ FUZZY_PROPERTIES = [
 
 def changeCharset(data, charset="utf-8", type="xml"):
 
-    if DEBUG_LEVEL >= 10: print "Tyring to convert {0} to {1}".format(charset, type)
+    if flannelfox.settings['debugLevel'] >= 10: print "Tyring to convert {0} to {1}".format(charset, type)
 
     if charset is None:
         charset = "utf-8"
@@ -234,7 +172,7 @@ def modification_date(filename):
     try:
         return int(datetime.datetime.fromtimestamp(OsPath.getmtime(filename)).strftime("%s"))
     except:
-        if DEBUG_LEVEL >= 1: print "There was a problem getting the timestamp for:\n{0}".format(filename)
+        if flannelfox.settings['debugLevel'] >= 1: print "There was a problem getting the timestamp for:\n{0}".format(filename)
         return -1
 
 
@@ -245,13 +183,13 @@ def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
     if lastModified == -1:
         return True
 
-    if DEBUG_LEVEL >= 1: print "Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60)))    
+    if flannelfox.settings['debugLevel'] >= 1: print "Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60)))    
     difference = math.ceil((time.time()/60 - lastModified/60))
     if difference >= frequency:
-        if DEBUG_LEVEL >= 5: print "Cache update needed".format(cacheFilename) 
+        if flannelfox.settings['debugLevel'] >= 5: print "Cache update needed".format(cacheFilename) 
         return True
     else:
-        if DEBUG_LEVEL >= 5: print "Cache update not needed".format(cacheFilename)
+        if flannelfox.settings['debugLevel'] >= 5: print "Cache update not needed".format(cacheFilename)
         return False
 
 
@@ -268,18 +206,18 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
 
     try:
         if isCacheUpdateNeeded(cacheFilename=cacheFilename, frequency=frequency):
-            if DEBUG_LEVEL >= 5: print "Cache update for {0} needed".format(cacheFilename)
+            if flannelfox.settings['debugLevel'] >= 5: print "Cache update for {0} needed".format(cacheFilename)
             with open(cacheFilename, 'w') as cache:
                 cache.write(data)
 
         else:
-            if DEBUG_LEVEL >= 5: print "Cache update for {0} not needed".format(cacheFilename)    
+            if flannelfox.settings['debugLevel'] >= 5: print "Cache update for {0} not needed".format(cacheFilename)    
 
     except Exception as e:
-        if DEBUG_LEVEL >= 1: print "There was a problem writing a cache file {0}: {1}".format(cacheFilename, e)
+        if flannelfox.settings['debugLevel'] >= 1: print "There was a problem writing a cache file {0}: {1}".format(cacheFilename, e)
 
 
-def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
+def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir']):
     majorFeeds = {}
 
     try:
@@ -297,7 +235,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                 with open(os.path.join(configFolder,configFile)) as lastfmJson:
                     lastfmAritstsLists = json.load(lastfmJson)
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading the lastfm config file\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading the lastfm config file\n{0}".format(e)
                 continue
 
             try:
@@ -330,7 +268,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                     httpResponse = -1
                     useCache = False
 
-                    cache_filename = "{0}/{1}".format(LAST_FM_ARTISTS_CONFIG_CACHE_DIR,artistsList.get("list_name")+'.'+configFile)
+                    cache_filename = "{0}/{1}".format(flannelfox.settings['files']['lastfmCacheDir'],artistsList.get("list_name")+'.'+configFile)
                     if not os.path.exists(os.path.dirname(cache_filename)):
                         try:
                             os.makedirs(os.path.dirname(cache_filename))
@@ -343,7 +281,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "Feeds with out names are not permitted"
+                        if flannelfox.settings['debugLevel'] >= 5: print "Feeds with out names are not permitted"
                         continue
 
                     # Get the feedType
@@ -358,7 +296,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                         feedDestination = unicode(artistsList.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed has an invalid destination value"
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed has an invalid destination value"
                         continue
 
                     # Collect the feeds
@@ -371,7 +309,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
                         continue
 
                     if not isCacheUpdateNeeded(cacheFilename=cache_filename):
@@ -390,22 +328,22 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
 
                             try:
                                 # TODO: Covert this to a pool
-                                r = requests.get(LAST_FM_API, headers=headers, params=call, timeout=60)
+                                r = requests.get(flannelfox.settings['apis']['lastfm'], headers=headers, params=call, timeout=60)
                                 httpResponse = r.status_code
                             except Exception as e:
                                 httpResponse = -1
-                                if DEBUG_LEVEL >= 1: print "There was a problem fetching a Lastfm album page\n{0}".format(httpResponse)
+                                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem fetching a Lastfm album page\n{0}".format(httpResponse)
 
                             if httpResponse == 200:
                                 reply = r.json()
                             else:
-                                if DEBUG_LEVEL >= 1: print "There was a problem fetching a Lastfm album page\n{0}".format(httpResponse)
+                                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem fetching a Lastfm album page\n{0}".format(httpResponse)
                                 replies = []
                                 break # TODO: Replace this with an exception
 
                             maxPages = int(reply["artists"]["@attr"]["totalPages"])
                             replies.extend(reply["artists"]["artist"][:])
-                            if DEBUG_LEVEL >= 1: print "Fetching Lastfm album page {0} of {1}: [{2}]".format(currentPage, maxPages, httpResponse)
+                            if flannelfox.settings['debugLevel'] >= 1: print "Fetching Lastfm album page {0} of {1}: [{2}]".format(currentPage, maxPages, httpResponse)
                             currentPage = currentPage + 1
 
                         for artist in replies:
@@ -420,11 +358,11 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
 
                     if useCache:
                         try:
-                            if DEBUG_LEVEL >= 5: print "Reading cache file for [{0}]".format(cache_filename)
+                            if flannelfox.settings['debugLevel'] >= 5: print "Reading cache file for [{0}]".format(cache_filename)
                             with open(cache_filename) as cache:
                                 artists = json.load(cache)
                         except Exception as e:
-                            if DEBUG_LEVEL >= 1: print "There was a problem reading a lastfm list cache file: {0}".format(e)
+                            if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading a lastfm list cache file: {0}".format(e)
                             continue
 
                     # Collect the feedFilters
@@ -455,14 +393,14 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
                             feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        if DEBUG_LEVEL >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
                         continue
 
                     # Append the Config item to the dict
                     majorFeeds[feedName] = {u"feedName":feedName,u"feedType":feedType,u"feedDestination":feedDestination,u"minorFeeds":minorFeeds,u"feedFilters":feedFilterList}
 
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading a lastfm artists list file:\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading a lastfm artists list file:\n{0}".format(e)
                 httpResponse = -1
                 artists = []
     except Exception as e:
@@ -473,7 +411,7 @@ def readLastfmArtists(configFolder=LAST_FM_ARTISTS_CONFIG_FOLDER):
     return majorFeeds
 
 
-def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
+def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
     '''
     Reads the tv I want from the trakt.tv api
     Content-Type:application/json
@@ -499,7 +437,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                 with open(os.path.join(configFolder,configFile)) as trakt_json:
                     TRAKT_TV_LISTS = json.load(trakt_json)
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading the trakt config file\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading the trakt config file\n{0}".format(e)
                 continue
 
             # Loop through the trakt.tv lists
@@ -535,10 +473,10 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "Feeds with out names are not permitted"
+                        if flannelfox.settings['debugLevel'] >= 5: print "Feeds with out names are not permitted"
                         continue
 
-                    cache_filename = os.path.join(TRAKT_CONFIG_CACHE_DIR,feedName+'.'+configFile)
+                    cache_filename = os.path.join(flannelfox.settings['files']['traktCacheDir'],feedName+'.'+configFile)
 
                     print 'Checking {0}'.format(cache_filename)
 
@@ -568,7 +506,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                         feedDestination = unicode(trakt_list.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed has an invalid destination value"
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed has an invalid destination value"
                         continue
 
                     # Collect the feeds
@@ -581,7 +519,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
                         continue
 
                     if not isCacheUpdateNeeded(cacheFilename=cache_filename):
@@ -589,20 +527,20 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
 
                     if not useCache:
                         try:
-                            r = requests.get("{0}/users/{1}/lists/{2}/items".format(TRAKT_API, trakt_list["username"], trakt_list["list_name"]), headers=headers, timeout=60)
+                            r = requests.get("{0}/users/{1}/lists/{2}/items".format(flannelfox.settings['apis']['trakt'], trakt_list["username"], trakt_list["list_name"]), headers=headers, timeout=60)
                             httpResponse = r.status_code
 
                             if httpResponse == 200:
                                 trakt_list_results = r.json()
                             else:
-                                if DEBUG_LEVEL >= 1: print "There was a problem fetching a trakt list file: {0}".format(httpResponse)
+                                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem fetching a trakt list file: {0}".format(httpResponse)
                             
                         except Exception as e:
-                            if DEBUG_LEVEL >= 1: print "There was a problem fetching a trakt list file: {0}".format(e)
+                            if flannelfox.settings['debugLevel'] >= 1: print "There was a problem fetching a trakt list file: {0}".format(e)
                             trakt_list_results = []
                             httpResponse = -1
 
-                        if DEBUG_LEVEL >= 1: print "Fetching trakt list page: [{0}]".format(httpResponse)
+                        if flannelfox.settings['debugLevel'] >= 1: print "Fetching trakt list page: [{0}]".format(httpResponse)
 
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
@@ -613,11 +551,11 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
 
                     if useCache:
                         try:
-                            if DEBUG_LEVEL >= 5: print "Reading cache file for [{0}]".format(cache_filename)
+                            if flannelfox.settings['debugLevel'] >= 5: print "Reading cache file for [{0}]".format(cache_filename)
                             with open(cache_filename) as cache:
                                 trakt_list_results = json.load(cache)
                         except Exception as e:
-                            if DEBUG_LEVEL >= 1: print "There was a problem reading a trakt list cache file: {0}".format(e)
+                            if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading a trakt list cache file: {0}".format(e)
                             continue
 
                     # Collect the feedFilters
@@ -675,7 +613,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                             feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        if DEBUG_LEVEL >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
                         continue
 
                     # Append the Config item to the dict
@@ -684,7 +622,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
                 #f = open("feeds_new.json", 'w')
                 #json.dump(majorFeeds, f)
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading a trakt list file:\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading a trakt list file:\n{0}".format(e)
 
     except Exception as e:
         # This should only happen if there was an issue getting files names from the directory
@@ -693,7 +631,7 @@ def readTraktTV(configFolder=TRAKT_CONFIG_FOLDER):
     return majorFeeds
 
 
-def readRSS(configFolder=RSS_CONFIG_FOLDER):
+def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
     '''
     Read the RSSFeedConfig file
 
@@ -726,7 +664,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                 with open(os.path.join(configFolder,configFile)) as rss_json:
                     RSS_LISTS = json.load(rss_json)
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading the rss config file\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading the rss config file\n{0}".format(e)
                 continue
 
             # Loop through the rss lists
@@ -758,7 +696,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "Feeds with out names are not permitted"
+                        if flannelfox.settings['debugLevel'] >= 5: print "Feeds with out names are not permitted"
                         continue
 
                     headers = {
@@ -780,7 +718,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                         feedDestination = unicode(rss_list.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed has an invalid destination value"
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed has an invalid destination value"
                         continue
 
                     # Collect the feeds
@@ -793,7 +731,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        if DEBUG_LEVEL >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feed contains an invalid minorFeed:\n{0}".format(e)
                         continue
 
                     # Collect the feedFilters
@@ -819,7 +757,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                             feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        if DEBUG_LEVEL >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 5: print "The feedFilters contains an invalid rule:\n{0}".format(e)
                         continue
 
                     #f = open("test{0}.json".format(feedName), 'w')
@@ -830,7 +768,7 @@ def readRSS(configFolder=RSS_CONFIG_FOLDER):
                     majorFeeds[configFile+'.'+feedName] = {u"feedName":feedName,u"feedType":feedType,u"feedDestination":feedDestination,u"minorFeeds":minorFeeds,u"feedFilters":feedFilterList}
 
             except Exception as e:
-                if DEBUG_LEVEL >= 1: print "There was a problem reading a rss list file:\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 1: print "There was a problem reading a rss list file:\n{0}".format(e)
 
     except Exception as e:
         # This should only happen if there was an issue getting files names from the directory

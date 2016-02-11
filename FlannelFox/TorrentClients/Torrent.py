@@ -7,10 +7,11 @@
 # -*- coding: utf-8 -*-
 # System Includes
 import time
+import flannelfox
+from flannelfox.databases import Databases
 
-# FlannelFox imports
-from FlannelFox import TorrentDB
-
+# Setup the database object
+TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 class Torrent(object):
 

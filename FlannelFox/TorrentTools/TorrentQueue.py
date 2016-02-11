@@ -9,9 +9,14 @@
 # Sytem Includes
 import time
 
-# FlannelFox Includes
-from FlannelFox.TorrentTools import Torrents
-from FlannelFox import TorrentDB
+# flannelfox Includes
+from flannelfox.TorrentTools import Torrents
+from flannelfox.databases import Databases
+from flannelfox import Settings
+import flannelfox
+
+# Setup the database object
+TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 class Queue(object):
     '''

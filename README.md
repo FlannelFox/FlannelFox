@@ -1,4 +1,4 @@
-FlannelFox
+flannelfox
 ========
 
 This repo contains a custom set of scritps that can be used to monitor multiple RSS feeds and

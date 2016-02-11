@@ -9,14 +9,14 @@
 # System Includes
 import re, HTMLParser
 
-# FlannelFox Include
-from FlannelFox import Settings
+# flannelfox Include
+from flannelfox import Settings
 
 # SceneTools Include
-import FlannelFox.SceneTools.TV
-import FlannelFox.SceneTools.Movie
-import FlannelFox.SceneTools.Music
-from FlannelFox.SceneTools import VideoProperties
+import flannelfox.scenetools.TV
+import flannelfox.scenetools.Movie
+import flannelfox.scenetools.Music
+from flannelfox.scenetools import VideoProperties
 
 
 class Generic(object):
@@ -210,7 +210,7 @@ class Music(Generic):
             self.elements['torrentType'] = u'music'
 
             # Try to get metadata DICT
-            metaData = FlannelFox.SceneTools.Music.parseTitle(self.elements['title'])
+            metaData = flannelfox.scenetools.Music.parseTitle(self.elements['title'])
 
         else:
            super(Music,self).__init__(metaData['torrentTitle'],metaData['url'],minTime=minTime,minRatio=minRatio,comparison=comparison,feedDestination=feedDestination)
@@ -230,7 +230,7 @@ class TV(Generic):
             self.elements['torrentType'] = u'tv'
 
             # Try to get metadata DICT
-            metaData = FlannelFox.SceneTools.TV.parseTitle(self.elements['title'])
+            metaData = flannelfox.scenetools.TV.parseTitle(self.elements['title'])
 
         else:
            super(TV,self).__init__(metaData['torrentTitle'],metaData['url'],minTime=minTime,minRatio=minRatio,comparison=comparison,feedDestination=feedDestination)
@@ -251,7 +251,7 @@ class Movie(Generic):
             self.elements['torrentType'] = u'movie'
 
             # Try to get metadata Dict
-            metaData = FlannelFox.SceneTools.Movie.parseTitle(self.elements['title'])
+            metaData = flannelfox.scenetools.Movie.parseTitle(self.elements['title'])
 
         else:
             super(Movie,self).__init__(metaData['torrentTitle'],metaData['url'],minTime=minTime,minRatio=minRatio,comparison=comparison,feedDestination=feedDestination)

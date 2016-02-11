@@ -11,9 +11,11 @@
 # System Includes
 import re, json, time
 
-# FlannelFox Includes
-from FlannelFox import Settings, TorrentDB
+# flannelfox Includes
+import flannelfox
+from flannelfox import Settings
 from Torrent import Torrent
+from flannelfox.databases import Databases
 
 import requests
 
@@ -32,6 +34,9 @@ TRANSMISSION_RESPONSE_TORRENT_NO_RESPONSE = u"gotMetadataFromURL: http error 0: 
 
 
 TRANSMISSION_MAX_RETRIES = 3
+
+# Setup the database object
+TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 class Client(object):
 
@@ -113,7 +118,7 @@ class Client(object):
         else:
             uri = "{0}/{1}".format(self.elements["uri"],self.elements["rpcLocation"])
 
-        if Settings.DEBUG_LEVEL >= 10: print "Trying to communicate with the Transmission Server"
+        if flannelfox.settings['debugLevel'] >= 10: print "Trying to communicate with the Transmission Server"
         try:
             # Connect to the RPC server
             if postData is None:
@@ -136,13 +141,13 @@ class Client(object):
             if httpCode == 409:
                 print "Trying to get Session-Id Header: [{0}]".format(r.headers.get("X-Transmission-Session-Id"))
                 self.elements["sessionId"] = r.headers.get("X-Transmission-Session-Id")
-                if Settings.DEBUG_LEVEL >= 10: print "X-Transmission-Session-Id Error"
+                if flannelfox.settings['debugLevel'] >= 10: print "X-Transmission-Session-Id Error"
 
                 response, httpCode, encoding = self.__sendRequest(queryString,postData)
 
-            if Settings.DEBUG_LEVEL >= 10: print "Transmission call completed"
+            if flannelfox.settings['debugLevel'] >= 10: print "Transmission call completed"
         except Exception as e:
-            if Settings.DEBUG_LEVEL >= 1: print "There was a problem communicating with Transmission:\n{0}".format(e)
+            if flannelfox.settings['debugLevel'] >= 1: print "There was a problem communicating with Transmission:\n{0}".format(e)
             try:
                 httpCode = e.code
             except (AttributeError):
@@ -262,24 +267,8 @@ class Client(object):
 
             update - Field to update in the database
         '''
+        TorrentDB.updateHashString(update=update, using=using)
 
-        selectors = u''
-        data = u''
-
-        for key,val in using.iteritems():
-            if selectors != u'':
-                selectors += u" AND "
-            selectors += u"`{0}` = '{1}'".format(key,val)
-
-        for key,val in update.iteritems():
-            if data != u'':
-                data += u", "
-            data += u"`{0}` = '{1}'".format(key,val)
-
-
-
-        query = u"UPDATE {0} SET {1} WHERE {2}".format(Settings.QUEUED_TORRENTS_TABLE,data,selectors)
-        TorrentDB.execDB(query)
 
 
     def updateQueue(self):
@@ -403,11 +392,11 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Verification Succeeded"
             return True
         else:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Verification Failed"
 
             return False
@@ -448,11 +437,11 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Stop Succeeded"
             return True
         else:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Stop Failed"
 
             return False
@@ -493,11 +482,11 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Start Succeeded"
             return True
         else:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Start Failed"
 
             return False
@@ -584,11 +573,11 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Torrent Removal Succeeded"
             return True
         else:
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Torrent Removal Failed"
 
             return False
@@ -632,7 +621,7 @@ class Client(object):
         # Tag (not strictly needed)
         commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
 
-        if Settings.DEBUG_LEVEL >= 10: print "Trying to remove extra trackers"
+        if flannelfox.settings['debugLevel'] >= 10: print "Trying to remove extra trackers"
         while (True):
 
         # Remove a tracker
@@ -643,7 +632,7 @@ class Client(object):
             if transmissionResponseCode == TRANSMISSION_RESPONSE_INVALID_ARGUMENT:
                 break
 
-            if Settings.DEBUG_LEVEL >= 10: print "Tracker removed"
+            if flannelfox.settings['debugLevel'] >= 10: print "Tracker removed"
             
             # Wait 3 seconds before removing the next tracker
             time.sleep(5)
@@ -651,7 +640,7 @@ class Client(object):
         return True
 
 
-    def addTorrentURL(self,url=None,destination=Settings.DEFAULT_TORRENT_LOCATION):
+    def addTorrentURL(self,url=None,destination=flannelfox.settings['files']['defaultTorrentLocation']):
         '''
         Attempts to load the torrent at the given url into transmission
 
@@ -668,7 +657,7 @@ class Client(object):
         if url is None:
             raise ValueError(u"A url must be provided to add a torrent")
 
-        if Settings.DEBUG_LEVEL >= 5:
+        if flannelfox.settings['debugLevel'] >= 5:
             print "Trying to add a new torrent:\n{0}".format(url)
 
         # Method
@@ -704,7 +693,7 @@ class Client(object):
                 # for the torrent to later be added again
                 self.removeDupeTorrent(url=url, hashString=duplicateTorrent["hashString"])
 
-                if Settings.DEBUG_LEVEL >= 5:
+                if flannelfox.settings['debugLevel'] >= 5:
                     print "Duplicate torrent encountered: {0}".format(transmissionResponseCode)
                     print "Duplicate info {0}".format(response["arguments"])
 
@@ -721,7 +710,7 @@ class Client(object):
                 # update hash, addedOn, added in DB
                 self.__updateHashString(using={u"url":url}, update={u"hashString":torrentAdded["hashString"],u"addedOn":sinceEpoch,u"added":1})
 
-                if Settings.DEBUG_LEVEL >= 5:
+                if flannelfox.settings['debugLevel'] >= 5:
                     print "Torrent Added: {0}".format(transmissionResponseCode)
 
 
@@ -739,7 +728,7 @@ class Client(object):
             # Here we need to handle any special errors encountered when
             # trying to add a torrent
 
-            if Settings.DEBUG_LEVEL >= 5:
+            if flannelfox.settings['debugLevel'] >= 5:
                 print "Torrent Add Failed: {0}".format(transmissionResponseCode)
 
             # Get Current Time

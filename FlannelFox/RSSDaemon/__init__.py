@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 #-------------------------------------------------------------------------------
-# Name:        RSSDaemon
+# Name:        rssdaemon
 # Purpose:     Run in the background and get new torrents from RSS
 #              This app will read torrent RSS feeds and pull out the title and
 #              other needed data. It will then create a list of torrents that
@@ -28,23 +28,14 @@ import requests
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-# FlannelFox Includes
-from FlannelFox import Settings
+# flannelfox Includes
+import flannelfox
+from flannelfox import Settings
 
-# RSSDaemon Includes
-from FlannelFox.TorrentTools import Torrents, TorrentQueue
-from FlannelFox.TorrentTools.Torrents import TORRENT_TYPES
+# rssdaemon Includes
+from flannelfox.torrenttools import Torrents, TorrentQueue
+from flannelfox.torrenttools.Torrents import TORRENT_TYPES
 
-# #############################################################################
-# Setup the python path
-# #############################################################################
-HOME_DIR = OsPath.expanduser(ur'~')
-
-# Location to look for config files and DB, no trailing slash
-APP_PATH = HOME_DIR+ur'/tools/'
-
-sys.path.append(APP_PATH)
-# #############################################################################
 
 httpRegex = re.compile(r"https?://([^/]+)(?:/.*)?")
 
@@ -56,7 +47,7 @@ def __readRSSFeed(url):
     encoding = "utf-8"
 
     try:
-        #if Settings.DEBUG_LEVEL >= 5: print "Fetching URL: [{0}]".format(url)
+        #if flannelfox.settings['debugLevel'] >= 5: print "Fetching URL: [{0}]".format(url)
         # Open the URL and get the data
         #opener = urllib2.build_opener()
         #opener.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0')]
@@ -76,7 +67,7 @@ def __readRSSFeed(url):
             print "There was a problem opening the URL: [{0}]\n[{1}]".format(url,e)
 
     except Exception as e:
-        if Settings.DEBUG_LEVEL >= 1: print "There was a problem fetching the URL: [{0}]\n{1}".format(url,e)
+        if flannelfox.settings['debugLevel'] >= 1: print "There was a problem fetching the URL: [{0}]\n{1}".format(url,e)
         
     return (response, httpCode, encoding)
 
@@ -129,15 +120,15 @@ def __rssToTorrents(xmlData,feedType=u"none",feedDestination=None,minRatio=0.0,m
 
 
             except (KeyError) as e:
-                if Settings.DEBUG_LEVEL >= 10: print "A valid Feed Type was not specified:\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 10: print "A valid Feed Type was not specified:\n{0}".format(e)
 
             except (TypeError, ValueError) as e:
-                if Settings.DEBUG_LEVEL >= 10: print "There was a problem creating a torrent:\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 10: print "There was a problem creating a torrent:\n{0}".format(e)
 
         rssItems = None
 
     except (IOError,ValueError,ET.ParseError) as e:
-        if Settings.DEBUG_LEVEL >= 1:
+        if flannelfox.settings['debugLevel'] >= 1:
             print "There was a problem reading the RSS Feed:\n{0}".format(e)
             print xmlData[:300]
        
@@ -164,7 +155,7 @@ def __rssThread(majorFeed):
             # Read URL
             rssData, httpCode, encoding = __readRSSFeed(minorFeed["url"])
 
-            if Settings.DEBUG_LEVEL >= 5: print "Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode)
+            if flannelfox.settings['debugLevel'] >= 5: print "Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode)
 
             # If we did not get any data or there was an error then skip to the next feed
             if rssData is None or httpCode != 200:
@@ -215,7 +206,7 @@ def rssReader():
         # If single thread is specified then do not fork
         if Settings.CPU_COUNT == 1:
             for majorFeed in majorFeeds.itervalues():
-                if Settings.DEBUG_LEVEL >= 5: 
+                if flannelfox.settings['debugLevel'] >= 5: 
                     print "#########################"
                     print "Feed Name: {0}".format(majorFeed["feedName"])
                     print "#########################"
@@ -243,10 +234,10 @@ def rssReader():
                     try:
                         result = result.get(timeout=1)
                     except Exception as e:
-                        if Settings.DEBUG_LEVEL >= 10: print "TEST ERROR\n{0}".format(e)
+                        if flannelfox.settings['debugLevel'] >= 10: print "TEST ERROR\n{0}".format(e)
                         continue
 
-                    if Settings.DEBUG_LEVEL >= 10:
+                    if flannelfox.settings['debugLevel'] >= 10:
                         print 'Appending items to the torrent queue'
 
                     #Take each item in the result and append it to the Queue
@@ -254,19 +245,19 @@ def rssReader():
                         rssTorrents.append(r)
 
             except Exception as e:
-                if Settings.DEBUG_LEVEL >= 10: print "There was a problem getting the data from the result pool\n{0}".format(e)
+                if flannelfox.settings['debugLevel'] >= 10: print "There was a problem getting the data from the result pool\n{0}".format(e)
 
             print "###################################"
             print "Pool fetch of RSS Done {0}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
             print "###################################"
 
-        if Settings.DEBUG_LEVEL >= 1:
+        if flannelfox.settings['debugLevel'] >= 1:
             print "###################################"
             print "# {0} records loaded from RSS Feeds".format(len(rssTorrents))
             print "###################################"
 
         # Write matching filters to database
-        #if Settings.DEBUG_LEVEL >= 1: print "RSSQUEUE:\n {0}".format(rssTorrents)
+        #if flannelfox.settings['debugLevel'] >= 1: print "RSSQUEUE:\n {0}".format(rssTorrents)
         rssTorrents.writeToDB()
 
         # Garbage collection
@@ -275,7 +266,7 @@ def rssReader():
         #Settings.showHeap()
 
         # Put the app to sleep
-        time.sleep(Settings.RSSDAEMON_THREAD_SLEEP)
+        time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
 
 
 def main():
@@ -288,10 +279,10 @@ def main():
         rssReader()
 
     except KeyboardInterrupt as e:
-        if Settings.DEBUG_LEVEL >= 1: print "Application Aborted"
+        if flannelfox.settings['debugLevel'] >= 1: print "Application Aborted"
 
     finally:
-        if Settings.DEBUG_LEVEL >= 1: print "Application Exited"
+        if flannelfox.settings['debugLevel'] >= 1: print "Application Exited"
 
         
 if __name__ == '__main__':

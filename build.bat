@@ -1,3 +1,3 @@
 python setup.py sdist
-rmdir FlannelFox.egg-info /S /Q
+rmdir flannelfox.egg-info /S /Q
 pause

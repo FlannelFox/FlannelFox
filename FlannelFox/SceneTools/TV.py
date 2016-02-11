@@ -11,8 +11,8 @@
 # System Includes
 import re
 
-# FlannelFox Includes
-from FlannelFox import Settings
+# flannelfox Includes
+from flannelfox import Settings
 import VideoProperties, SeparatorCharacters
 
 def parseTitle(title):
