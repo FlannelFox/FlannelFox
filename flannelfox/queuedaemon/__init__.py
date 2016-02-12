@@ -113,7 +113,7 @@ def queueReader():
                     print "Torrent to remove:"
                     print finishedTorrent
 
-                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"],reason='Freespace Needed (minimumFreeSpace)')
 
                 torrentClient.updateQueue()
 
@@ -139,7 +139,7 @@ def queueReader():
                     print "Torrent to remove:"
                     print finishedTorrent
 
-                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"],reason='Freespace Needed (maxUsedSpace)')
 
                 torrentClient.updateQueue()
 
@@ -167,7 +167,7 @@ def queueReader():
                 print "Torrent to remove:"
                 print finishedTorrent
 
-            torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+            torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"],reason='Too Many Torrents Running')
 
             torrentClient.updateQueue()
 
@@ -195,7 +195,7 @@ def queueReader():
 
             deleteCount = 0
             for finishedTorrent in finishedTorrents:
-                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"], reason='Strict Queue Management Enabled and Torrent Finished')
                 deleteCount += 1
 
                 if flannelfox.settings['debugLevel'] >= 1:
@@ -298,7 +298,7 @@ def queueReader():
             print slowestFinishedSeed
 
             # Remove slow seed
-            if torrentClient.deleteTorrent(hashString=slowestFinishedSeed['hashString']):
+            if torrentClient.deleteTorrent(hashString=slowestFinishedSeed['hashString'], reason='Making Room For a New Torrent'):
 
                 # Get a new torrent
                 newTorrent = queuedTorrents[0]

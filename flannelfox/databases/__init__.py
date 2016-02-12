@@ -54,15 +54,15 @@ class Databases:
         return True
 
 
-    def deleteTorrent(self, hashString=None,url=None):
+    def deleteTorrent(self, hashString=None,url=None,reason='No Reason Given'):
         '''
         Removes a torrent from the database
         
         Takes a torrent as a parameter
         '''
-        
         try:
-            return self.Database.deleteTorrent(hashString=hashString, url=url)
+            if flannelfox.settings['debugLevel'] >= 1: print 'Torrent deleted from database: {0}'.format(reason)
+            return self.Database.deleteTorrent(hashString=hashString, url=url, reason=reason)
 
         except Exception as e:
             if flannelfox.settings['debugLevel'] >= 1: print "There was an issue deleting a torrent from the database. {0}".format(e)

@@ -297,19 +297,11 @@ class Client(object):
 
             for torrent in torrents:
 
+                trackers = torrent['trackerStats']
+                
                 # Look to make sure at least one tracker is working
                 # This is due to bug #5775
                 # https://trac.transmissionbt.com/ticket/5775
-                # TODO: move error checking into this module
-
-                trackers = torrent['trackerStats']
-                
-                #if torrent['errorString'] == u'':
-                #    print 'checking trackers for {0}'.format(torrent['hashString'])
-                #    for tracker in trackers:
-                #        print tracker['lastAnnounceResult']
-
-
                 if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
 
                     workingTrackerExists = False
@@ -319,8 +311,15 @@ class Client(object):
                         #print 'Error: {0}'.format(torrent['errorString'])
                         #print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
                         #print 'Status: {0}'.format(torrent['status'])
-                        if not workingTrackerExists and tracker['lastAnnounceSucceeded']:
-                            workingTrackerExists = True
+                        if not workingTrackerExists:
+                            
+                            if tracker['lastAnnounceResult'] != '' and tracker['lastAnnounceResult'] != None:
+                                workingTrackerExists = True
+                                if flannelfox.settings['debugLevel'] >= 5: print 'Rewriting errorString: {0}'.format(tracker['lastAnnounceResult'])
+                                torrent['errorString'] = tracker['lastAnnounceResult']
+
+                            elif tracker['lastAnnounceSucceeded']:
+                                workingTrackerExists = True
 
                     if not workingTrackerExists and torrent['errorString'] == u'':
                         torrent['error'] = -1
@@ -333,16 +332,14 @@ class Client(object):
                 # Check for torrents that should be removed
                 for error in Trackers.Responses.Remove:
                     if error in torrent['errorString']:
-                        print 'Removing torrent do to errorString'
-                        self.removeBadTorrent(hashString=torrent['hashString'])
+                        if flannelfox.settings['debugLevel'] >= 5: print 'Removing torrent do to errorString: {0}'.format(torrent['errorString'])
+                        self.removeBadTorrent(hashString=torrent['hashString'], reason=torrent['errorString'])
                         continue
 
                 # Check if the torrent is corrupted
                 if 'please verify local data' in torrent['errorString']:
+
                     # Ensure a Check is not already in place
-
-                    print 'Corrupted torrent found, verifying'
-
                     if (torrent["status"] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
                         self.verifyTorrent(hashString=torrent["hashString"])
                         continue
@@ -351,10 +348,10 @@ class Client(object):
                         self.StartTorrent(hashString=torrent["hashString"])
                         continue
 
-                    print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
+                    if flannelfox.settings['debugLevel'] >= 5: print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
 
                 elif torrent["errorString"] != u'':
-                    print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
+                    if flannelfox.settings['debugLevel'] >= 5: print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
 
 
                 t = Torrent(hashString=torrent["hashString"],
@@ -522,7 +519,7 @@ class Client(object):
             return False
 
 
-    def removeBadTorrent(self,hashString=None):
+    def removeBadTorrent(self,hashString=None,reason='No Reason Given'):
         '''
         Removes a torrent from both transmission and the database
         this should be called when there is a bad torrent.
@@ -532,10 +529,10 @@ class Client(object):
         '''
 
         # Remove the torrent from the client
-        self.removeTorrent(hashString=hashString,deleteData=True)
+        self.removeTorrent(hashString=hashString,deleteData=True,reason=reason)
 
         # Remove the torrent from the DB
-        TorrentDB.deleteTorrent(hashString=hashString)
+        TorrentDB.deleteTorrent(hashString=hashString,reason=reason)
 
     def removeDupeTorrent(self, hashString=None, url=None):
         '''
@@ -551,16 +548,16 @@ class Client(object):
         if not TorrentDB.torrentExists(hashString=hashString, url=url):
 
             # Remove the torrent from the client
-            self.removeTorrent(hashString=hashString,deleteData=False)
+            self.removeTorrent(hashString=hashString,deleteData=False, reason='Duplicate Torrent')
 
             return True
         else:
             # Remove the torrent from the DB
-            TorrentDB.deleteTorrent(url=url)
+            TorrentDB.deleteTorrent(url=url, reason='Duplicate Torrent')
 
             return True
 
-    def removeTorrent(self,hashString=None,deleteData=False):
+    def removeTorrent(self,hashString=None,deleteData=False,reason='No Reason Given'):
         '''
         Removes a torrent from transmission
 
@@ -602,6 +599,8 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
+
+        if flannelfox.settings['debugLevel'] >= 1: print 'Torrent Removed from client: {0}'.format(reason)
         if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= 5:
                 print "Torrent Removal Succeeded"
@@ -613,7 +612,7 @@ class Client(object):
             return False
 
 
-    def deleteTorrent(self,hashString=None):
+    def deleteTorrent(self,hashString=None,reason='No Reason Given'):
         '''
         Removes a torrent from transmission and deletes the associated data
 
@@ -626,7 +625,8 @@ class Client(object):
         Returns:
             bool True is action completed
         '''
-        return self.removeTorrent(hashString=hashString,deleteData=True)
+        if flannelfox.settings['debugLevel'] >= 1: print 'Torrent deleted from client: {0}'.format(reason)
+        return self.removeTorrent(hashString=hashString,deleteData=True, reason=reason)
 
 
     def removeExtraTrackers(self,hashString=None):
@@ -772,7 +772,7 @@ class Client(object):
                 transmissionResponseCode == Responses.torrent_no_response):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
                 # for the torrent to later be added again
-                TorrentDB.deleteTorrent(url=url)
+                TorrentDB.deleteTorrent(url=url, reason=transmissionResponseCode)
 
             time.sleep(10)
             return False

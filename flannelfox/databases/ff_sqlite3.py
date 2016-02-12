@@ -135,7 +135,7 @@ class Database:
         return True
 
 
-    def deleteTorrent(self, hashString=None,url=None):
+    def deleteTorrent(self, hashString=None,url=None,reason='No Reason Specified'):
         '''
         Removes a torrent from the database
         
@@ -143,8 +143,6 @@ class Database:
         '''
         
         try:
-            print "Torrent delete called"
-        
             # The view the query should use
             currentView = QUEUED_TORRENTS_TABLE
             
