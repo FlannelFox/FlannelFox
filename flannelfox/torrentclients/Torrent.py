@@ -1,8 +1,9 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
+# Name:         Torrent
+# Purpose:      This module is a generic torrent module that clients should use
+#               when trying to describe torrents. Status can be added as needed.
 #
-# TODO: Fill out the complete purpose of this module
+# 
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 # System Includes
@@ -12,6 +13,17 @@ from flannelfox.databases import Databases
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
+
+
+class Status:
+    Paused = 0
+    QueuedForVerification = 1
+    Verifying = 2
+    QueuedForDownloading = 3
+    Downloading = 4
+    QueuedForSeeding = 5
+    Seeding = 6
+
 
 class Torrent(object):
 
@@ -28,6 +40,17 @@ class Torrent(object):
                     downloadDir=None,
                     status=-1,
                     **kwargs):
+
+        '''
+        status
+        # 0 - paused
+        # 1 - queued for downloading
+        # 2 - verifying
+        # 3 - queued for downloading
+        # 4 - downloading
+        # 5 - queued for seeding
+        # 6 - seeding
+        '''
 
         self.elements = {}
         self.elements["hashString"] = hashString
@@ -147,23 +170,22 @@ class Torrent(object):
 
         # Check for untracked torrents, 0 minRatio and minTime
         if torrentData["minRatio"] <= 0.0 and torrentData["minTime"] <= 0.0:
-            return True
+            return False
         
+
         # If the and comparison is invoked
-        if (torrentData["comparison"] == u"and" and
+        if (
+            torrentData["comparison"] == u"and" and
             (torrentData["minTime"] <= seedTime and torrentData["minTime"] > 0.0) and
             (torrentData["minRatio"] <= self.elements["uploadRatio"] and torrentData["minRatio"] > 0.0)
         ):
             return True
 
-
         # Otherwise assume this is an or comparison
-        elif (torrentData["comparison"] != u"and" and
+        elif (
+            torrentData["comparison"] != u"and" and 
             (
-                (torrentData["minTime"] <= seedTime and torrentData["minTime"] > 0.0)
-            )
-            or
-            (
+                (torrentData["minTime"] <= seedTime and torrentData["minTime"] > 0.0) or
                 (torrentData["minRatio"] <= self.elements["uploadRatio"] and torrentData["minRatio"] > 0.0)
             )
         ):
@@ -173,12 +195,19 @@ class Torrent(object):
             return False
 
     def isSeeding(self):
-        if self.elements["percentDone"] >= 1.0:
+        if self.elements["status"] in [Status.Seeding, Status.QueuedForSeeding]:
             return True
         return False
 
     def isDownloading(self):
-        return not self.isSeeding()
+        if self.elements['status'] in [Status.QueuedForDownloading, Status.Downloading]:
+            return True
+        return False
+
+    def isPaused(self):
+        if self.elements['status'] is Status.Paused:
+            return True
+        return False        
 
     def isUploading(self):
         if self.elements["rateUpload"] > 0:

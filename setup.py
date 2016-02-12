@@ -1,7 +1,7 @@
 import os.path as osPath
 from setuptools import setup, find_packages
 setup(name = 'flannelfox',
-      version = '0.1.7',
+      version = '0.1.9',
       packages = find_packages(),
       package_data={'flannelfox': ['flannelfox/data/*', 'flannelfox/data/config/*']},
       data_files = [
@@ -21,6 +21,9 @@ setup(name = 'flannelfox',
       install_requires = [
         "requests",
         "beautifulsoup4",
-        "chardet"
+        "chardet",
+        "pyOpenSSL",
+        "ndg-httpsclient",
+        "pyasn1"
 	    ]
 )

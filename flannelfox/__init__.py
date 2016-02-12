@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import os
+import os, json
 
 HOME_DIR = os.path.expanduser(ur'~')
 
@@ -16,7 +16,7 @@ settings = {
         'privateDir': os.path.join(HOME_DIR, '.flannelfox'),
         'configDir': os.path.join(HOME_DIR, '.flannelfox/config'),
         'toolsDir': os.path.join(HOME_DIR, 'tools'),
-        'settingsConfigFile': os.path.join(HOME_DIR, '.flannelfox/config/python.inc'),
+        'settingsConfigFile': os.path.join(HOME_DIR, '.flannelfox/config/settings.json'),
         'feedConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds'),
         'rssConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds/rssfeeds'),
         'lastfmConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds/lastfmfeeds'),
@@ -43,8 +43,8 @@ settings = {
         "https": False,
         "port": "9091",
         "rpcLocation": "transmission/rpc",
-        "user": "transmission",
-        "password": "passittome"
+        "user": "",
+        "password": ""
     },
     "debugLevel": 1,
     "minimumFreeSpace": 0,
@@ -52,5 +52,28 @@ settings = {
     "queueDaemonThreadSleep": 60,
     "rssDaemonThreadSleep": 60
 }
+
+def update(a, b):
+    '''
+    updates a with b recursively
+    '''
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                update(a[key], b[key])
+            else:
+                a[key] = b[key]
+        else:
+            a[key] = b[key]
+    return a
+
+
+try:
+    with open(settings['files']['settingsConfigFile'],'r') as config:
+        settings = update(settings, json.load(config))
+        print "External settings file found"
+except Exception as e:
+    print "Could not load external settings file: {0}".format(e)
+    pass
 
 import Settings

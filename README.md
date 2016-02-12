@@ -16,3 +16,11 @@ Python 2.7
 * requests
 * beautifulsoup4
 * chardet
+* pyOpenSSL
+* ndg-httpsclient
+* pyasn1
+
+
+Create .local to install as a user
+==================================
+mkdir -p ~/.local/lib/python2.7/site-packages

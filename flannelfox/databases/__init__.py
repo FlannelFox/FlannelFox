@@ -23,7 +23,7 @@ class Databases:
 
         if dbType == u'SQLITE3':
             self.Database = ff_sqlite3.Database()
-            if flannelfox.settings['debugLevel'] >= 1: print "SQLite3 Database initialized"
+            if flannelfox.settings['debugLevel'] >= 5: print "SQLite3 Database initialized"
         else:
             if flannelfox.settings['debugLevel'] >= 1: print "There was an issue initializing the database. [{0}]{1}".format(dbType, e)
 

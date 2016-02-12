@@ -10,7 +10,7 @@
 import time
 
 # flannelfox Includes
-from flannelfox.TorrentTools import Torrents
+from flannelfox.torrenttools import Torrents
 from flannelfox.databases import Databases
 from flannelfox import Settings
 import flannelfox

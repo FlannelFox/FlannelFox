@@ -48,16 +48,30 @@ def queueReader():
                 add new torrents
     '''
 
+    torrentClient = None
+
     # ######################################################################
     # Create a transmission client to interact with
     # ######################################################################
-    transClient = Transmission.Client(host=flannelfox.settings['client']['host'],
-                                            port=flannelfox.settings['client']['port'],
-                                            user=flannelfox.settings['client']['user'],
-                                            password=flannelfox.settings['client']['password'],
-                                            rpcLocation=flannelfox.settings['client']['rpcLocation'],
-                                            https=flannelfox.settings['client']['https']
-    )
+    if 'client' not in flannelfox.settings:
+        print 'No client was configured to monitor!'
+        return
+
+
+
+    if flannelfox.settings['client']['type'] == "transmission":
+
+        torrentClient = Transmission.Client(host=flannelfox.settings['client']['host'],
+                                                port=flannelfox.settings['client']['port'],
+                                                user=flannelfox.settings['client']['user'],
+                                                password=flannelfox.settings['client']['password'],
+                                                rpcLocation=flannelfox.settings['client']['rpcLocation'],
+                                                https=flannelfox.settings['client']['https']
+        )
+
+    if torrentClient == None:
+        print 'No client was configured to monitor!'
+        return
 
     while True:
         print "Loop Started {0}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
@@ -66,53 +80,15 @@ def queueReader():
         # Torrent Data
         # ["hashString","id","error","errorString","uploadRatio","percentDone","doneDate","activityDate","rateUpload","downloadDir"]
 
-        # ######################################################################
         # Get the initial queue listing
-        # ######################################################################
-        transmissionResponseCode,httpResponseCode = transClient.updateQueue()
-
-        # ######################################################################
-        # TODO: Check for torrent errors and attempts to fix them
-        # ######################################################################
-        for torrent in transClient.getQueue():
-            # Remove torrents that have the following errors
-
-            if (torrent["errorString"] == u"unregistered torrent" or
-                torrent["errorString"] == u"unregistered torrent: dupe" or
-                torrent["errorString"] == u"unregistered torrent: trump" or
-                torrent["errorString"] == u"unregistered torrent: bad file names" or
-                torrent["errorString"] == u"unregistered torrent: bad tags" or
-                torrent["errorString"] == u"torrent not registered with this tracker" or
-                torrent["errorString"] == u"torrent not registered with this tracker, probably deleted. (code 2)" or
-                torrent["errorString"] == u"invalid torrent!"):
-                transClient.removeBadTorrent(hashString=torrent["hashString"])
-
-            # Error Messages that should be ignored
-            elif ("tracker down for scheduled maintenance" in torrent["errorString"]):
-                torrent["errorString"] = u''
-
-            # Check torrents that have a corrupt piece
-            elif ("please verify local data" in torrent["errorString"]):
-                # Ensure a Check is not already in place
-                if (torrent["status"] != 0 and 
-                    torrent["status"] != 1 and 
-                    torrent["status"] != 2):
-                    transClient.verifyTorrent(hashString=torrent["hashString"])
-                elif torrent["status"] == 0:
-                    transClient.StartTorrent(hashString=torrent["hashString"])
-                print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
-
-            # Report all other errors
-            elif torrent["errorString"] != u'':
-                print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
+        transmissionResponseCode,httpResponseCode = torrentClient.updateQueue()
 
 
-        # ######################################################################
+
         # Check for freespace in each directory
         # Collect all the active destinations
-        # ######################################################################
         destinations = []
-        for torrent in transClient.getQueue():
+        for torrent in torrentClient.getQueue():
             if torrent["downloadDir"] not in destinations:
                 destinations.append(torrent["downloadDir"])
 
@@ -123,7 +99,7 @@ def queueReader():
 
             while FreeSpace.check(destination,u'M') < flannelfox.settings['minimumFreeSpace']:
 
-                finishedTorrents = transClient.getFinishedSeeding()
+                finishedTorrents = torrentClient.getFinishedSeeding()
                 if len(finishedTorrents) <= 0:
                     break
 
@@ -137,21 +113,19 @@ def queueReader():
                     print "Torrent to remove:"
                     print finishedTorrent
 
-                transClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
 
-                transClient.updateQueue()
+                torrentClient.updateQueue()
 
 
 
-        # ######################################################################
         # Check for used space in master dir
-        # ######################################################################
         if flannelfox.settings['debugLevel'] >= 10: print "Used Space: {0} | Max Space: {1}".format(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G'),flannelfox.settings['maxUsedSpace'])
         if flannelfox.settings['maxUsedSpace'] > 0:
             while int(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G')) >= int(flannelfox.settings['maxUsedSpace']):
                 if flannelfox.settings['debugLevel'] >= 1: print "Used Space: {0} | Max Space: {1}".format(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G'),flannelfox.settings['maxUsedSpace'])
 
-                finishedTorrents = transClient.getFinishedSeeding()
+                finishedTorrents = torrentClient.getFinishedSeeding()
                 if len(finishedTorrents) <= 0:
                     if flannelfox.settings['debugLevel'] >= 1: print "There are no finished Seeds to stop"
                     # TODO: If there are no torrents to be removed and we need space,
@@ -165,18 +139,16 @@ def queueReader():
                     print "Torrent to remove:"
                     print finishedTorrent
 
-                transClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
 
-                transClient.updateQueue()
+                torrentClient.updateQueue()
 
 
 
-        # ######################################################################
-        # TODO: Ensure there are not too many torrents running
-        # ######################################################################
-        while len(transClient.getQueue()) > flannelfox.settings['queueManagement']['maxTorrents']:
+        # Ensure there are not too many torrents running
+        while len(torrentClient.getQueue()) > flannelfox.settings['queueManagement']['maxTorrents']:
 
-            finishedTorrents = transClient.getFinishedSeeding()
+            finishedTorrents = torrentClient.getFinishedSeeding()
             if len(finishedTorrents) <= 0:
                 break
 
@@ -184,7 +156,7 @@ def queueReader():
                 print "Too many torrents are running, trying to remove one"
                 print "=================================================="
                 print "# Max Queue: {0}".format(flannelfox.settings['queueManagement']['maxTorrents'])
-                print "# Queue: {0}".format(len(transClient.getQueue()))
+                print "# Queue: {0}".format(len(torrentClient.getQueue()))
                 print "# Finished Seeding {0}".format(len(finishedTorrents))
                 print "=================================================="
 
@@ -195,17 +167,19 @@ def queueReader():
                 print "Torrent to remove:"
                 print finishedTorrent
 
-            transClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+            torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
 
-            transClient.updateQueue()
+            torrentClient.updateQueue()
 
+        print "=================================================="
+        print "# Queue: {0}".format(len(torrentClient.getQueue()))
+        print "# Queued Torrents: {0}".format(len(TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'])))
+        print "# Downloading Torrents: {0}".format(len(torrentClient.getDownloading()))
+        print "=================================================="
 
-
-        # ######################################################################
-        # TODO: if flannelfox.settings['queueManagement']['strictQueueManagement'] the remove all finished torrents
-        # ######################################################################
-        while flannelfox.settings['queueManagement']['strictQueueManagement'] and transClient.getFinishedSeeding() > 0:
-            finishedTorrents = transClient.getFinishedSeeding()
+        # Remove Finished torrents is strict queue management is enabled
+        while flannelfox.settings['queueManagement']['strictQueueManagement'] and torrentClient.getFinishedSeeding() > 0:
+            finishedTorrents = torrentClient.getFinishedSeeding()
 
 
             if flannelfox.settings['debugLevel'] >= 10:
@@ -221,7 +195,7 @@ def queueReader():
 
             deleteCount = 0
             for finishedTorrent in finishedTorrents:
-                transClient.deleteTorrent(hashString=finishedTorrent["hashString"])
+                torrentClient.deleteTorrent(hashString=finishedTorrent["hashString"])
                 deleteCount += 1
 
                 if flannelfox.settings['debugLevel'] >= 1:
@@ -230,14 +204,14 @@ def queueReader():
 
                 print "Torrents Deleted: {0}/{1}".format(deleteCount,len(finishedTorrents))
 
-            transClient.updateQueue()
+            torrentClient.updateQueue()
 
 
 
         if flannelfox.settings['debugLevel'] >= 10:
-                print "Is there room in the queue, {0}".format(len(transClient.getQueue()) < flannelfox.settings['queueManagement']['maxTorrents'])
+                print "Is there room in the queue, {0}".format(len(torrentClient.getQueue()) < flannelfox.settings['queueManagement']['maxTorrents'])
                 print "Are there queued torrents, {0}".format(len(TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'],num=1)) > 0)
-                print "Are there too many torrents downloading, {0}".format(len(transClient.getDownloading()) > flannelfox.settings['queueManagement']['maxDownloadingTorrents'])
+                print "Are there too many torrents downloading, {0}".format(len(torrentClient.getDownloading()) > flannelfox.settings['queueManagement']['maxDownloadingTorrents'])
                 
                 print "MAX USED: {0}".format(int(flannelfox.settings['maxUsedSpace']))
 
@@ -245,13 +219,11 @@ def queueReader():
                     print "Is there enough room, {0}".format(int(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G')) < int(flannelfox.settings['maxUsedSpace']))
                 else:
                     print "Is there enough room, True"
-        # ######################################################################
-        # TODO: if there are torrents in the queue and there is room for more
-        # to be added then add them till the queue is full
-        # ######################################################################
-        while ( len(transClient.getQueue()) < flannelfox.settings['queueManagement']['maxTorrents'] and
+
+        # Add torrents if there is room
+        while ( len(torrentClient.getQueue()) < flannelfox.settings['queueManagement']['maxTorrents'] and
                 len(TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'],num=1)) > 0 and
-                len(transClient.getDownloading()) < flannelfox.settings['queueManagement']['maxDownloadingTorrents'] and
+                len(torrentClient.getDownloading()) < flannelfox.settings['queueManagement']['maxDownloadingTorrents'] and
                 (
                     int(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G')) < int(flannelfox.settings['maxUsedSpace']) or
                     int(flannelfox.settings['maxUsedSpace']) == 0
@@ -261,9 +233,9 @@ def queueReader():
 
             print "There are torrents in the Queue"
 
-            serverQueue = transClient.getQueue()
+            serverQueue = torrentClient.getQueue()
             queuedTorrents = TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'])
-            downloadingTorrents = transClient.getDownloading()
+            downloadingTorrents = torrentClient.getDownloading()
 
             if flannelfox.settings['debugLevel'] >= 1:
                 print "There is room in the queue for more torrents so let's add them"
@@ -279,32 +251,29 @@ def queueReader():
             # Add new torrent
             # If a destination was not specified then don't pass one
             if newTorrent.get("feedDestination", None) is None:
-                transClient.addTorrentURL(newTorrent["url"])
+                torrentClient.addTorrentURL(newTorrent["url"])
             else:
-                transClient.addTorrentURL(newTorrent["url"],newTorrent["feedDestination"])
+                torrentClient.addTorrentURL(newTorrent["url"],newTorrent["feedDestination"])
 
-            transClient.updateQueue()
+            torrentClient.updateQueue()
 
 
 
-        # ######################################################################
-        # TODO: if there are finished torrents and queued torrents then remove a
-        # finished one and add a new torrent
-        # ######################################################################
-        while ( len(transClient.getQueue()) >= flannelfox.settings['queueManagement']['maxTorrents'] and
+        # Remove a finished torrent if room is needed to add a torrent
+        while ( len(torrentClient.getQueue()) >= flannelfox.settings['queueManagement']['maxTorrents'] and
                 len(TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'],num=1)) > 0 and
-                len(transClient.getDownloading()) < flannelfox.settings['queueManagement']['maxDownloadingTorrents'] and
+                len(torrentClient.getDownloading()) < flannelfox.settings['queueManagement']['maxDownloadingTorrents'] and
                 (
                     int(UsedSpace.check(flannelfox.settings['files']['maxUsedSpaceDir'],u'G')) < int(flannelfox.settings['maxUsedSpace']) or
                     int(flannelfox.settings['maxUsedSpace']) == 0
                 )
                ):
 
-            finishedTorrents = transClient.getFinishedSeeding()
-            serverQueue = transClient.getQueue()
+            finishedTorrents = torrentClient.getFinishedSeeding()
+            serverQueue = torrentClient.getQueue()
             queuedTorrents = TorrentDB.getQueuedTorrents(fields=['url', 'feedDestination'])
-            downloadingTorrents = transClient.getDownloading()
-            dormantSeeds = transClient.getDormantSeeds()
+            downloadingTorrents = torrentClient.getDownloading()
+            dormantSeeds = torrentClient.getDormantSeeds()
 
             if len(finishedTorrents) <= 0:
                 if flannelfox.settings['debugLevel'] >= 10:
@@ -323,13 +292,13 @@ def queueReader():
                 slowestFinishedSeed = dormantSeeds
             # Else get a slow seed
             else:
-                slowestFinishedSeed = transClient.getSlowestSeeds(num=1)
+                slowestFinishedSeed = torrentClient.getSlowestSeeds(num=1)
 
             slowestFinishedSeed = slowestFinishedSeed[0]
             print slowestFinishedSeed
 
             # Remove slow seed
-            if transClient.deleteTorrent(hashString=slowestFinishedSeed['hashString']):
+            if torrentClient.deleteTorrent(hashString=slowestFinishedSeed['hashString']):
 
                 # Get a new torrent
                 newTorrent = queuedTorrents[0]
@@ -338,14 +307,14 @@ def queueReader():
                 # Add new torrent
                 # If a destination was not specified then don't pass one
                 if newTorrent.get("feedDestination", None) is None:
-                    transClient.addTorrentURL(newTorrent["url"])
+                    torrentClient.addTorrentURL(newTorrent["url"])
                 else:
-                    transClient.addTorrentURL(newTorrent["url"],newTorrent["feedDestination"])
+                    torrentClient.addTorrentURL(newTorrent["url"],newTorrent["feedDestination"])
 
-            transClient.updateQueue()
+            torrentClient.updateQueue()
 
 
-        if flannelfox.settings['debugLevel'] >= 10: print u"HttpCode: {0} | TransmissionCode: {1} | Downloading: {2} | Seeding: {3} | Total: {4}".format(httpResponseCode,transmissionResponseCode,len(transClient.getDownloading()),len(transClient.getSeeding()),len(transClient.getQueue())).encode("utf-8")
+        if flannelfox.settings['debugLevel'] >= 10: print u"HttpCode: {0} | TransmissionCode: {1} | Downloading: {2} | Seeding: {3} | Total: {4}".format(httpResponseCode,transmissionResponseCode,len(torrentClient.getDownloading()),len(torrentClient.getSeeding()),len(torrentClient.getQueue())).encode("utf-8")
 
         print "Loop Stopped {0}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
 

@@ -13,9 +13,12 @@ import re, json, time
 
 # flannelfox Includes
 import flannelfox
+import Trackers
 from flannelfox import Settings
+from Torrent import Status as TorrentStatus
 from Torrent import Torrent
 from flannelfox.databases import Databases
+
 
 import requests
 
@@ -23,20 +26,21 @@ import requests
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 
-TRANSMISSION_RESPONSE_SUCCESS = u"success"
-TRANSMISSION_RESPONSE_INVALID_ARGUMENT = u"invalid argument"
-TRANSMISSION_RESPONSE_DUPLICATE = u"duplicate torrent"
-TRANSMISSION_RESPONSE_BAD_TORRENT = u"invalid or corrupt torrent file"
-TRANSMISSION_RESPONSE_TORRENT_NOT_FOUND = u"gotMetadataFromURL: http error 404: Not Found"
-TRANSMISSION_RESPONSE_TORRENT_BAD_REQUEST = u"gotMetadataFromURL: http error 400: Bad Request"
-TRANSMISSION_RESPONSE_TORRENT_SERVICE_UNAVAILABLE = u"gotMetadataFromURL: http error 503: Service Unavailable"
-TRANSMISSION_RESPONSE_TORRENT_NO_RESPONSE = u"gotMetadataFromURL: http error 0: No Response"
-
-
 TRANSMISSION_MAX_RETRIES = 3
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
+
+class Responses(object):
+    success = u'success'
+    invalid_argument = u'invalid argument'
+    duplicate = u'duplicate torrent'
+    bad_torrent = u'invalid or corrupt torrent file'
+    torrent_not_found = u'gotMetadataFromURL: http error 404: Not Found'
+    torrent_bad_request = u'gotMetadataFromURL: http error 400: Bad Request'
+    torrent_service_unavailable = u'gotMetadataFromURL: http error 503: Service Unavailable'
+    torrent_no_response = u"gotMetadataFromURL: http error 0: No Response"
+
 
 class Client(object):
 
@@ -139,7 +143,7 @@ class Client(object):
             # Look for the X-Transmission-Session-Id header and save it, then
             # make the request again
             if httpCode == 409:
-                print "Trying to get Session-Id Header: [{0}]".format(r.headers.get("X-Transmission-Session-Id"))
+                #print "Trying to get Session-Id Header: [{0}]".format(r.headers.get("X-Transmission-Session-Id"))
                 self.elements["sessionId"] = r.headers.get("X-Transmission-Session-Id")
                 if flannelfox.settings['debugLevel'] >= 10: print "X-Transmission-Session-Id Error"
 
@@ -284,7 +288,7 @@ class Client(object):
 
         # Incase we get an incomplete answer or fail let's retry
         tries = 0
-        while transmissionResponseCode != TRANSMISSION_RESPONSE_SUCCESS and tries < TRANSMISSION_MAX_RETRIES:
+        while transmissionResponseCode != Responses.success and tries < TRANSMISSION_MAX_RETRIES:
             torrents,httpResponseCode,transmissionResponseCode = self.__getTorrents()
             tries += 1
 
@@ -293,44 +297,66 @@ class Client(object):
 
             for torrent in torrents:
 
-                # Look to make sure at least on tracker is working
+                # Look to make sure at least one tracker is working
                 # This is due to bug #5775
                 # https://trac.transmissionbt.com/ticket/5775
-                #
+                # TODO: move error checking into this module
 
                 trackers = torrent['trackerStats']
-#                if torrent['errorString'] == u'':
-#                    print 'checking trackers'
-#                    for tracker in trackers:
-#                      
-#                      print tracker['lastAnnounceResult']
+                if torrent['errorString'] == u'':
+                    print 'checking trackers for {0}'.format(torrent['hashString'])
+                    for tracker in trackers:
+                        print tracker['lastAnnounceResult']
 
 
-                if torrent['status'] == 4 and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
+                if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
 
                     workingTrackerExists = False
 
                     for tracker in trackers:
-                        #print tracker
-                        #print 'Error: {0}'.format(torrent['errorString'])
-                        #print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
-                        #print 'Status: {0}'.format(torrent['status'])
+                        print tracker
+                        print 'Error: {0}'.format(torrent['errorString'])
+                        print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
+                        print 'Status: {0}'.format(torrent['status'])
                         if not workingTrackerExists and tracker['lastAnnounceSucceeded']:
                             workingTrackerExists = True
 
                     if not workingTrackerExists and torrent['errorString'] == u'':
-                        #torrent['error'] = -1
-                        #torrent['errorString'] = u'No Connectable Trackers Found'
-                        #print '{0}: No Connectable Trackers Found'.format(torrent['hashString'])
-                        #print 'Announce {0}:{1}'.format(tracker['announce'], tracker['lastAnnounceSucceeded'])
+                        torrent['error'] = -1
+                        torrent['errorString'] = u'No Connectable Trackers Found'
+                        print '{0}: No Connectable Trackers Found'.format(torrent['hashString'])
+                        print 'Announce {0}:{1}'.format(tracker['announce'], tracker['lastAnnounceSucceeded'])
                         torrent['error'] = 99
                         torrent['errorString'] = 'No Connectable Trackers Found'
+
+                # Check for torrents that should be removed
+                for error in Trackers.Responses.Remove:
+                    if error in torrent['errorString']:
+                        self.removeBadTorrent(hashString=torrent['hashString'])
+                        continue
+
+                # Check if the torrent is corrupted
+                if 'please verify local data' in torrent['errorString']:
+                    # Ensure a Check is not already in place
+
+                    if (torrent["status"] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
+                        self.verifyTorrent(hashString=torrent["hashString"])
+                        continue
+
+                    elif torrent["status"] == TorrentStatus.Paused:
+                        self.StartTorrent(hashString=torrent["hashString"])
+                        continue
+
+                    print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
+
+                elif torrent["errorString"] != u'':
+                    print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
 
 
                 t = Torrent(hashString=torrent["hashString"],
                             id=torrent["id"],
                             error=torrent["error"],
-                            errorString=torrent["errorString"].lower(),
+                            errorString=torrent["errorString"],
                             uploadRatio=torrent["uploadRatio"],
                             percentDone=torrent["percentDone"],
                             doneDate=torrent["doneDate"],
@@ -391,7 +417,7 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= 5:
                 print "Verification Succeeded"
             return True
@@ -436,7 +462,7 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= 5:
                 print "Stop Succeeded"
             return True
@@ -481,7 +507,7 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= 5:
                 print "Start Succeeded"
             return True
@@ -572,7 +598,7 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= 5:
                 print "Torrent Removal Succeeded"
             return True
@@ -629,7 +655,7 @@ class Client(object):
             
             # If the call did not work then we are down to 
             # the last tracker so break out of the loop
-            if transmissionResponseCode == TRANSMISSION_RESPONSE_INVALID_ARGUMENT:
+            if transmissionResponseCode == Responses.invalid_argument:
                 break
 
             if flannelfox.settings['debugLevel'] >= 10: print "Tracker removed"
@@ -714,7 +740,7 @@ class Client(object):
                     print "Torrent Added: {0}".format(transmissionResponseCode)
 
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             # TODO: Remove extra trackers, this is needed due to a bug in
             # transmission that prevents non-communication related errors
             # from being seen when there is a back tracker.
@@ -734,12 +760,12 @@ class Client(object):
             # Get Current Time
             sinceEpoch = int(time.time())
 
-            if (transmissionResponseCode == TRANSMISSION_RESPONSE_BAD_TORRENT or
-#                transmissionResponseCode == TRANSMISSION_RESPONSE_DUPLICATE or
-                transmissionResponseCode == TRANSMISSION_RESPONSE_TORRENT_NOT_FOUND or
-                transmissionResponseCode == TRANSMISSION_RESPONSE_TORRENT_BAD_REQUEST or
-                transmissionResponseCode == TRANSMISSION_RESPONSE_TORRENT_SERVICE_UNAVAILABLE or
-                transmissionResponseCode == TRANSMISSION_RESPONSE_TORRENT_NO_RESPONSE):
+            if (transmissionResponseCode == Responses.bad_torrent or
+#                transmissionResponseCode == Responses.duplicate or
+                transmissionResponseCode == Responses.torrent_not_found or
+                transmissionResponseCode == Responses.torrent_bad_request or
+                transmissionResponseCode == Responses.torrent_service_unavailable or
+                transmissionResponseCode == Responses.torrent_no_response):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
                 # for the torrent to later be added again
                 TorrentDB.deleteTorrent(url=url)
@@ -883,7 +909,7 @@ class Client(object):
         # Make sure the call worked
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == TRANSMISSION_RESPONSE_SUCCESS:
+        if transmissionResponseCode == Responses.success:
             return True
         else:
             return False
