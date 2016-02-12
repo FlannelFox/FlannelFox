@@ -9,6 +9,7 @@
 class Responses:
     Remove = [
         'unregistered torrent',
+        'Unregistered torrent',
         'torrent not registered with this tracker',
         'invalid torrent'
     ]

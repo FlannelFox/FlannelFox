@@ -297,19 +297,11 @@ class Client(object):
 
             for torrent in torrents:
 
+                trackers = torrent['trackerStats']
+                
                 # Look to make sure at least one tracker is working
                 # This is due to bug #5775
                 # https://trac.transmissionbt.com/ticket/5775
-                # TODO: move error checking into this module
-
-                trackers = torrent['trackerStats']
-                
-                #if torrent['errorString'] == u'':
-                #    print 'checking trackers for {0}'.format(torrent['hashString'])
-                #    for tracker in trackers:
-                #        print tracker['lastAnnounceResult']
-
-
                 if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
 
                     workingTrackerExists = False
@@ -319,8 +311,15 @@ class Client(object):
                         #print 'Error: {0}'.format(torrent['errorString'])
                         #print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
                         #print 'Status: {0}'.format(torrent['status'])
-                        if not workingTrackerExists and tracker['lastAnnounceSucceeded']:
-                            workingTrackerExists = True
+                        if not workingTrackerExists:
+                            
+                            if tracker['lastAnnounceResult'] != '' and tracker['lastAnnounceResult'] != None:
+                                workingTrackerExists = True
+                                if flannelfox.settings['debugLevel'] >= 5: print 'Rewriting errorString: {0}'.format(tracker['lastAnnounceResult'])
+                                torrent['errorString'] = tracker['lastAnnounceResult']
+
+                            elif tracker['lastAnnounceSucceeded']:
+                                workingTrackerExists = True
 
                     if not workingTrackerExists and torrent['errorString'] == u'':
                         torrent['error'] = -1
@@ -333,16 +332,14 @@ class Client(object):
                 # Check for torrents that should be removed
                 for error in Trackers.Responses.Remove:
                     if error in torrent['errorString']:
-                        print 'Removing torrent do to errorString'
+                        if flannelfox.settings['debugLevel'] >= 5: print 'Removing torrent do to errorString: {0}'.format(torrent['errorString'])
                         self.removeBadTorrent(hashString=torrent['hashString'])
                         continue
 
                 # Check if the torrent is corrupted
                 if 'please verify local data' in torrent['errorString']:
+
                     # Ensure a Check is not already in place
-
-                    print 'Corrupted torrent found, verifying'
-
                     if (torrent["status"] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
                         self.verifyTorrent(hashString=torrent["hashString"])
                         continue
@@ -351,10 +348,10 @@ class Client(object):
                         self.StartTorrent(hashString=torrent["hashString"])
                         continue
 
-                    print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
+                    if flannelfox.settings['debugLevel'] >= 5: print "Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"])
 
                 elif torrent["errorString"] != u'':
-                    print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
+                    if flannelfox.settings['debugLevel'] >= 5: print "Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"])
 
 
                 t = Torrent(hashString=torrent["hashString"],
