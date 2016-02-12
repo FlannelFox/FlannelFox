@@ -303,10 +303,11 @@ class Client(object):
                 # TODO: move error checking into this module
 
                 trackers = torrent['trackerStats']
-                if torrent['errorString'] == u'':
-                    print 'checking trackers for {0}'.format(torrent['hashString'])
-                    for tracker in trackers:
-                        print tracker['lastAnnounceResult']
+                
+                #if torrent['errorString'] == u'':
+                #    print 'checking trackers for {0}'.format(torrent['hashString'])
+                #    for tracker in trackers:
+                #        print tracker['lastAnnounceResult']
 
 
                 if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
@@ -314,30 +315,33 @@ class Client(object):
                     workingTrackerExists = False
 
                     for tracker in trackers:
-                        print tracker
-                        print 'Error: {0}'.format(torrent['errorString'])
-                        print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
-                        print 'Status: {0}'.format(torrent['status'])
+                        #print tracker
+                        #print 'Error: {0}'.format(torrent['errorString'])
+                        #print 'Announce {0}:{1}'.format(tracker['host'], tracker['lastAnnounceSucceeded'])
+                        #print 'Status: {0}'.format(torrent['status'])
                         if not workingTrackerExists and tracker['lastAnnounceSucceeded']:
                             workingTrackerExists = True
 
                     if not workingTrackerExists and torrent['errorString'] == u'':
                         torrent['error'] = -1
                         torrent['errorString'] = u'No Connectable Trackers Found'
-                        print '{0}: No Connectable Trackers Found'.format(torrent['hashString'])
-                        print 'Announce {0}:{1}'.format(tracker['announce'], tracker['lastAnnounceSucceeded'])
+                        #print '{0}: No Connectable Trackers Found'.format(torrent['hashString'])
+                        #print 'Announce {0}:{1}'.format(tracker['announce'], tracker['lastAnnounceSucceeded'])
                         torrent['error'] = 99
                         torrent['errorString'] = 'No Connectable Trackers Found'
 
                 # Check for torrents that should be removed
                 for error in Trackers.Responses.Remove:
                     if error in torrent['errorString']:
+                        print 'Removing torrent do to errorString'
                         self.removeBadTorrent(hashString=torrent['hashString'])
                         continue
 
                 # Check if the torrent is corrupted
                 if 'please verify local data' in torrent['errorString']:
                     # Ensure a Check is not already in place
+
+                    print 'Corrupted torrent found, verifying'
 
                     if (torrent["status"] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
                         self.verifyTorrent(hashString=torrent["hashString"])

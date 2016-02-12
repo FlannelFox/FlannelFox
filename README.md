@@ -21,6 +21,13 @@ Python 2.7
 * pyasn1
 
 
+Setup
+=====
+
 Create .local to install as a user
 ==================================
 mkdir -p ~/.local/lib/python2.7/site-packages
+
+Add ~/.local/bin to your path
+=============================
+Unix: add `export PATH=$PATH:~/.local/bin` to your ~/.bashrc file
