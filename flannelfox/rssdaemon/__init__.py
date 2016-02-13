@@ -218,7 +218,7 @@ def rssReader():
 
         # If multiple cores are allowed then for http calls
         else:
-            rssPool = Pool(processes=(Settings.CPU_COUNT)*4)
+            rssPool = Pool(processes=Settings.CPU_COUNT)
 
             print "Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
             results = [rssPool.apply_async(__rssThread, (f,)) for f in majorFeeds.itervalues()]
