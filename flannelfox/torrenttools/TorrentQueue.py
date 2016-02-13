@@ -66,7 +66,11 @@ class Queue(object):
             return -1
 
         # Check and see if the value already exists in DB
-        elif TorrentDB.torrentExists(val):
+        elif TorrentDB.torrentExists(torrent=val):
+            return -1
+
+        # Ensure it is not Blacklisted
+        elif TorrentDB.torrentBlacklisted(val['url']):
             return -1
 
         # Append the value to elements

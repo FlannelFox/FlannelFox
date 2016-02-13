@@ -41,7 +41,7 @@ try:
 except:
     CPU_COUNT = 1
 
-print "Application started, using {0} threads to fetch feeds".format(CPU_COUNT)
+# print "Application started, using {0} cores to fetch feeds".format(CPU_COUNT)
 # #############################################################################
 
 

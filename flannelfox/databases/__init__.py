@@ -28,13 +28,23 @@ class Databases:
             if flannelfox.settings['debugLevel'] >= 1: print "There was an issue initializing the database. [{0}]{1}".format(dbType, e)
 
 
+    def addBlacklistedTorrent(self, url, reason='No Reason Given'):
+        '''
+        Add a torrent to the blacklist
+
+        These torrents are flagged as broken and should be ignored when
+        the grabbers are looking for new torrents
+        '''
+        if flannelfox.settings['debugLevel'] >= 1: print 'Torrent blacklisted: {0}'.format(reason)
+        self.Database.addBlacklistedTorrent(url=url, reason=reason)
+
+
     def updateHashString(self, update, using):
         '''
         Update the hashString that the database is holding
         '''
 
         self.Database.updateHashString(update=update, using=using)
-
 
 
     def addTorrentsToQueue(self, queue):
@@ -85,6 +95,24 @@ class Databases:
         except Exception as e:
             if flannelfox.settings['debugLevel'] >= 1: print "There was an issue checking if a torrent exists in the database. {0}".format(e)
             return False
+
+
+    def torrentBlacklisted(self, url=None):
+        '''
+        Checks to see fi the torrent is blacklisted in the database
+        '''
+
+        try:
+
+            if not isinstance(url, str) and not isinstance(url, unicode):
+                raise ValueError('url was not a string')
+
+            return self.Database.torrentBlacklisted(url=url)
+
+        except Exception as e:
+            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue checking if a torrent is blacklisted in the database. {0}".format(e)
+            return False
+
 
 
     def execDB(self, query):

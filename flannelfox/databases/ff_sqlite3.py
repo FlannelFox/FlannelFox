@@ -24,6 +24,7 @@ from flannelfox.torrenttools.Torrents import TORRENT_TYPES
 # Database info
 TORRENT_DB = flannelfox.settings['files']['privateDir']+ur"/flannelfox.db"
 QUEUED_TORRENTS_TABLE = ur"QueuedTorrents"
+BLACKLISTED_TORRENTS_TABLE = ur"BlacklistedTorrents"
 ADDED_TORRENTS_VIEW = ur"AddedTorrentsView"
 QUEUED_TORRENTS_VIEW = ur"QueuedTorrentsView"
 TV_TORRENTS_VIEW = ur"TVTorrentsView"
@@ -52,6 +53,18 @@ class Database:
                 d[unicode(col[0])] = unicode(row[idx])
 
         return d
+
+    def addBlacklistedTorrent(self, url, reason='No Reason Given'):
+        '''
+        Add a torrent to the blacklist
+
+        These torrents are flagged as broken and should be ignored when
+        the grabbers are looking for new torrents
+        '''
+
+        query = u"INSERT INTO {0} ('url') VALUES ('{1}')".format(BLACKLISTED_TORRENTS_TABLE, url)
+        self.__execDB(query)
+
 
     def updateHashString(self, update, using):
         '''
@@ -116,8 +129,8 @@ class Database:
                         notExistsWhereClause += u"`{0}` = {1}".format(key, val)
 
                 query = u"INSERT INTO {0} ({1}) VALUES ({2})".format(QUEUED_TORRENTS_TABLE, ",".join(keys), ",".join(vals))
-                insertStatements.append(query)
 
+                insertStatements.append(query)
 
             # Insert each torrent into the DB
             for statement in insertStatements:
@@ -165,6 +178,20 @@ class Database:
             ''' TODO do something smart when this happens '''
             pass
 
+
+    def torrentBlacklisted(self, url=None):
+        '''
+        Checks to see fi the torrent is blacklisted in the database
+        '''
+
+        query = u'SELECT count(url) as hits FROM {0} WHERE url = "{1}"'.format(BLACKLISTED_TORRENTS_TABLE, url)
+        
+        hits = int(self.__queryDB(query)[0]['hits'])
+
+        if hits > 0:
+            return True
+        else:
+            return False
 
     def torrentExists(self, torrent=None, url=None, hashString=None):
         '''
@@ -226,10 +253,7 @@ class Database:
 
                 exists = self.__queryDB(query)
 
-            if exists is None:
-                pass
-
-            elif len(exists) > 0:
+            if len(exists) > 0:
                 return True
             else:
                 return False

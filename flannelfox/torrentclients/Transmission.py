@@ -764,15 +764,24 @@ class Client(object):
             # Get Current Time
             sinceEpoch = int(time.time())
 
-            if (transmissionResponseCode == Responses.bad_torrent or
-#                transmissionResponseCode == Responses.duplicate or
-                transmissionResponseCode == Responses.torrent_not_found or
-                transmissionResponseCode == Responses.torrent_bad_request or
-                transmissionResponseCode == Responses.torrent_service_unavailable or
-                transmissionResponseCode == Responses.torrent_no_response):
+            if (transmissionResponseCode in [
+                        Responses.bad_torrent,
+                        Responses.torrent_not_found,
+                        Responses.torrent_bad_request,
+                        Responses.torrent_service_unavailable,
+                        Responses.torrent_no_response
+                    ]
+                ):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
                 # for the torrent to later be added again
                 TorrentDB.deleteTorrent(url=url, reason=transmissionResponseCode)
+
+            if (transmissionResponseCode in [
+                        Responses.bad_torrent,
+                        Responses.torrent_not_found
+                    ]
+                ):
+                TorrentDB.addBlacklistedTorrent(url=url, reason=transmissionResponseCode)
 
             time.sleep(10)
             return False
