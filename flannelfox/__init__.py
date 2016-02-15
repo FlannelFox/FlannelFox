@@ -9,6 +9,13 @@ import os, json
 
 HOME_DIR = os.path.expanduser(ur'~')
 
+class debuglevels(object):
+    NONE = 0
+    ERROR = 1
+    WARN = 2
+    INFO = 3
+    DEBUG = 4
+
 settings = {
     'files':{
         'defaultTorrentLocation': os.path.join(HOME_DIR, 'files'),
@@ -46,11 +53,12 @@ settings = {
         "user": "",
         "password": ""
     },
-    "debugLevel": 1,
+    "debugLevel": debuglevels.ERROR,
     "minimumFreeSpace": 0,
     "maxUsedSpace": 600,
     "queueDaemonThreadSleep": 60,
-    "rssDaemonThreadSleep": 60
+    "rssDaemonThreadSleep": 60,
+    "maxRssThreads": 8
 }
 
 def update(a, b):

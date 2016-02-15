@@ -23,9 +23,9 @@ class Databases:
 
         if dbType == u'SQLITE3':
             self.Database = ff_sqlite3.Database()
-            if flannelfox.settings['debugLevel'] >= 5: print "SQLite3 Database initialized"
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO: print "SQLite3 Database initialized"
         else:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue initializing the database. [{0}]{1}".format(dbType, e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue initializing the database. [{0}]{1}".format(dbType, e)
 
 
     def addBlacklistedTorrent(self, url, reason='No Reason Given'):
@@ -35,7 +35,7 @@ class Databases:
         These torrents are flagged as broken and should be ignored when
         the grabbers are looking for new torrents
         '''
-        if flannelfox.settings['debugLevel'] >= 1: print 'Torrent blacklisted: {0}'.format(reason)
+        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print 'Torrent blacklisted: {0}'.format(reason)
         self.Database.addBlacklistedTorrent(url=url, reason=reason)
 
 
@@ -58,7 +58,7 @@ class Databases:
             return self.Database.addTorrentsToQueue(queue=queue)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue adding torrents to the database. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue adding torrents to the database. {0}".format(e)
             return False
 
         return True
@@ -71,11 +71,11 @@ class Databases:
         Takes a torrent as a parameter
         '''
         try:
-            if flannelfox.settings['debugLevel'] >= 1: print 'Torrent deleted from database: {0}'.format(reason)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO: print 'Torrent deleted from database: {0}'.format(reason)
             return self.Database.deleteTorrent(hashString=hashString, url=url, reason=reason)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue deleting a torrent from the database. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue deleting a torrent from the database. {0}".format(e)
 
 
     def torrentExists(self, torrent=None, url=None, hashString=None):
@@ -93,7 +93,7 @@ class Databases:
             return self.Database.torrentExists(torrent=torrent, url=url, hashString=hashString)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue checking if a torrent exists in the database. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue checking if a torrent exists in the database. {0}".format(e)
             return False
 
 
@@ -110,7 +110,7 @@ class Databases:
             return self.Database.torrentBlacklisted(url=url)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue checking if a torrent is blacklisted in the database. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue checking if a torrent is blacklisted in the database. {0}".format(e)
             return False
 
 
@@ -126,7 +126,7 @@ class Databases:
             return self.Database.execDB(query=query)
                 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue executing a database execution. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue executing a database execution. {0}".format(e)
             return 0
 
 
@@ -145,7 +145,7 @@ class Databases:
             return self.Database.queryDB(query=query)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue executing a database query. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue executing a database query. {0}".format(e)
             return {}
 
 
@@ -165,7 +165,7 @@ class Databases:
             return self.Database.getTorrentInfo(hashString=hashString, fields=fields)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue getting torrent information. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue getting torrent information. {0}".format(e)
             return {}
 
 
@@ -185,7 +185,7 @@ class Databases:
             return self.Database.getQueuedTorrents(fields=fields, num=num)
 
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue getting queued torrents. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue getting queued torrents. {0}".format(e)
             return []
 
 
@@ -200,5 +200,5 @@ class Databases:
         try:
             return self.Database.getQueuedTorrentsCount()
         except Exception as e:
-            if flannelfox.settings['debugLevel'] >= 1: print "There was an issue getting a queued torrent count. {0}".format(e)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was an issue getting a queued torrent count. {0}".format(e)
             return -1

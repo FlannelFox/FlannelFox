@@ -138,7 +138,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
             return False
         
         except Exception as e:
@@ -173,7 +173,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
         except Exception as e:
             ''' TODO do something smart when this happens '''
             pass
@@ -260,7 +260,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
 
             # This is false because we were not able to get an answer back
             return False
@@ -295,7 +295,7 @@ class Database:
                 return sqlCursor.rowcount
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
             return 0
         
         except Exception as e:
@@ -336,7 +336,7 @@ class Database:
             return rows
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
             return {}
 
         except Exception as e:
@@ -382,7 +382,7 @@ class Database:
             return results
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
             return {}
 
         except Exception as e:
@@ -449,7 +449,7 @@ class Database:
                 return results
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
             return []
 
         except Exception as e:
@@ -476,7 +476,7 @@ class Database:
             return results[0][u"downloadsQueued"]
         
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= 10: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
             return -1
 
         except Exception as e:
