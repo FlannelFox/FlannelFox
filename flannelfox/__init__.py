@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import os, json, logging
+import os, json
 
 class debuglevels(object):
     CRITICAL=50

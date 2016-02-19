@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import ctypes, os, platform, sys
+import ctypes, os, platform
 
 def check(folder,size=u'G'):
     ''' Return folder/drive free space (in bytes) '''

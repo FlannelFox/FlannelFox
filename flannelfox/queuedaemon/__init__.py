@@ -12,15 +12,14 @@
 import time, sys, platform, os
 from time import gmtime, strftime
 
+# Third party modules
 import daemon
 
 import flannelfox
-
 # FreeSpace Calculator
 from flannelfox.ostools import FreeSpace
 from flannelfox.ostools import UsedSpace
 from flannelfox import logging
-
 # Transmission Includes
 from flannelfox.torrentclients import Transmission
 from flannelfox.databases import Databases

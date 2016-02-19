@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import ctypes, os, platform, sys, subprocess, re, math
+import ctypes, platform, subprocess, re, math
 
 def check(folder,size=u'G'):
     ''' Return folder/drive used space (in bytes) '''

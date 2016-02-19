@@ -11,31 +11,29 @@
 # System Includes
 import re, json, time
 
+
+# Third party modules
+import requests
+# Needed to fix an SSL issue with requests
+import urllib3.contrib.pyopenssl
+urllib3.contrib.pyopenssl.inject_into_urllib3()
+
 # flannelfox Includes
 import flannelfox
-
 import Trackers
 from flannelfox import Settings
 from Torrent import Status as TorrentStatus
 from Torrent import Torrent
 from flannelfox.databases import Databases
 
-
-import requests
-
-# Needed to fix an SSL issue
-import urllib3.contrib.pyopenssl
-urllib3.contrib.pyopenssl.inject_into_urllib3()
+# Setup the logging agent
+from flannelfox import logging
+logger = logging.getLogger(__name__)
 
 TRANSMISSION_MAX_RETRIES = 3
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
-
-# Setup the logging agent
-from flannelfox import logging
-logger = logging.getLogger(__name__)
-
 
 class Responses(object):
     success = u'success'

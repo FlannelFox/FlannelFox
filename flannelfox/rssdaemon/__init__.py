@@ -14,17 +14,15 @@
 
 
 # System Includes
-import time, re, sys, signal, os
-
-import daemon
+import time, re, signal, os
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 from time import gmtime, strftime
 
 # Third party modules
 import requests
-
-# Needed to fix an SSL issue
+import daemon
+# Needed to fix an SSL issue with requests
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 

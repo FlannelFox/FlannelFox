@@ -6,9 +6,6 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-# Sytem Includes
-import time
-
 # flannelfox Includes
 from flannelfox.torrenttools import Torrents
 from flannelfox.databases import Databases

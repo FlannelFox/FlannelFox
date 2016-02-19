@@ -21,7 +21,7 @@ The filtering engine is fairly robust and as such can take a number of different
 * [tv](#tv)
 * [movie](#movie)
 * [music](#music)
-* [other](#Other)
+* [other](#other)
 
 
 #Where does all the torrent information get stored?

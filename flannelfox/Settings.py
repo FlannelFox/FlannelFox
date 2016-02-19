@@ -9,13 +9,14 @@
 # -*- coding: utf-8 -*-
 
 # System Includes
-import datetime, platform, sys, random, json, math, time
-import xml.etree.ElementTree as ET
+import datetime, json, math, time
 import os
-import os.path as OsPath
 
-# Third Party Includes
+# Third party modules
 import requests
+# Needed to fix an SSL issue with requests
+import urllib3.contrib.pyopenssl
+urllib3.contrib.pyopenssl.inject_into_urllib3()
 from bs4 import BeautifulSoup
 
 import flannelfox
@@ -128,7 +129,7 @@ def changeCharset(data, charset="utf-8", type="xml"):
 
 def modification_date(filename):
     try:
-        return int(datetime.datetime.fromtimestamp(OsPath.getmtime(filename)).strftime("%s"))
+        return int(datetime.datetime.fromtimestamp(os.path.getmtime(filename)).strftime("%s"))
     except:
         logger.error("There was a problem getting the timestamp for:\n{0}".format(filename))
         return -1
