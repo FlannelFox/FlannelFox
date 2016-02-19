@@ -36,6 +36,8 @@ Python 2.7
 * pyOpenSSL
 * ndg-httpsclient
 * pyasn1
+* python-daemon
+
 
 
 #Setup information
@@ -179,6 +181,8 @@ Movies have many of the same filters as TV with a couple of exceptions; episode 
 
 
 ##Other
+This is achieved by leaving the type section empty ""
+
 * wordMatch - matches an exact word/phrase in the torrent name.
 * wordMatchStrict - matches an exact word/phrase in the torrent name while taking letter case into consideration.
 

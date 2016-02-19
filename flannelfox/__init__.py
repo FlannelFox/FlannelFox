@@ -5,17 +5,48 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import os, json
-
-HOME_DIR = os.path.expanduser(ur'~')
+import os, json, logging
 
 class debuglevels(object):
-    NONE = 0
-    ERROR = 1
-    WARN = 2
-    INFO = 3
-    DEBUG = 4
+    CRITICAL=50
+    ERROR=40
+    WARNING=30
+    INFO=20
+    DEBUG=10
+    NOTSET=0
 
+    levelStrings = {
+        "CRITICAL": 50,
+        "ERROR": 40,
+        "WARNING": 30,
+        "INFO": 20,
+        "DEBUG": 10,
+        "NOTSET": 0,
+        "50": 50,
+        "40": 40,
+        "30": 30,
+        "20": 20,
+        "10": 10,
+        "0": 0
+    }
+
+    @classmethod
+    def __sanitizeLevel(cls, lvl="NOTSET"):
+        if lvl == "":
+            lvl="NOTSET"
+        return lvl.upper()
+
+    @classmethod
+    def getLevel(cls):
+        lvl = settings["debugLevel"]
+        lvl = cls.__sanitizeLevel(lvl)
+        return cls.levelStrings[lvl]
+
+
+
+
+# Initial Setup, these must be at the top
+HOME_DIR = os.path.expanduser(ur'~')
 settings = {
     'files':{
         'defaultTorrentLocation': os.path.join(HOME_DIR, 'files'),
@@ -53,7 +84,7 @@ settings = {
         "user": "",
         "password": ""
     },
-    "debugLevel": debuglevels.ERROR,
+    "debugLevel": "error",
     "minimumFreeSpace": 0,
     "maxUsedSpace": 600,
     "queueDaemonThreadSleep": 60,
@@ -79,9 +110,9 @@ def update(a, b):
 try:
     with open(settings['files']['settingsConfigFile'],'r') as config:
         settings = update(settings, json.load(config))
-        print "External settings file found"
+        #logger.error('External settings file found')
 except Exception as e:
-    print "Could not load external settings file: {0}".format(e)
     pass
+    #logger.error('Could not load external settings file: {0}'.format(e))
 
 import Settings

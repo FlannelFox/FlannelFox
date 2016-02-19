@@ -10,7 +10,6 @@ import subprocess
 def check(serviceCmd):
     ''' Check to see if given service is running '''
 
-    print 'Checking {0}'.format(serviceCmd)
     try:
         response,error = subprocess.Popen(['ps -Al | grep {0} | wc -l'.format(serviceCmd)], shell=True, stdout=subprocess.PIPE).communicate()
 

@@ -24,6 +24,7 @@ setup(name = 'flannelfox',
         "chardet",
         "pyOpenSSL",
         "ndg-httpsclient",
-        "pyasn1"
+        "pyasn1",
+        "python-daemon"
 	    ]
 )

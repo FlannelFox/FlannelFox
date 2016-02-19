@@ -32,7 +32,6 @@ def check(folder,size=u'G'):
             st = os.statvfs(folder)
             return st.f_bavail * st.f_frsize/divisor
     except OSError:
-        print 'The Folder [%s] does not exist.' % (folder)
 
         # Let's return a really large value so this folder is not considered for removal
         return 9*(1024**4)

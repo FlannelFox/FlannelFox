@@ -138,7 +138,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
             return False
         
         except Exception as e:
@@ -173,7 +173,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
         except Exception as e:
             ''' TODO do something smart when this happens '''
             pass
@@ -236,8 +236,6 @@ class Database:
                 query = u"SELECT torrentTitle FROM `{0}` WHERE ".format(currentView)
                 query += whereClause
 
-                #print "Check Exists: {0}".format(query)
-
                 # Query to see if the torrent is already in the DB
                 exists = self.__queryDB(query)
 
@@ -260,7 +258,7 @@ class Database:
 
         except sql.Error as e:
             ''' TODO do something smart when this happens '''
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
 
             # This is false because we were not able to get an answer back
             return False
@@ -295,7 +293,7 @@ class Database:
                 return sqlCursor.rowcount
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return 0
         
         except Exception as e:
@@ -336,7 +334,7 @@ class Database:
             return rows
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return {}
 
         except Exception as e:
@@ -382,7 +380,7 @@ class Database:
             return results
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return {}
 
         except Exception as e:
@@ -396,7 +394,6 @@ class Database:
 
         DEPRECIATED
         '''
-        print "This command is depreciated and should not be used"
         locations = [DEFAULT_TORRENT_LOCATION]
 
         query = u"SELECT `feedDestination` from {0} Group By `feedDestination`".format(QUEUED_TORRENTS_TABLE)
@@ -449,7 +446,7 @@ class Database:
                 return results
 
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return []
 
         except Exception as e:
@@ -476,7 +473,7 @@ class Database:
             return results[0][u"downloadsQueued"]
         
         except sql.Error as e:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem executing the SQL query:\n{0}\n{1}".format(e, query)
+            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return -1
 
         except Exception as e:

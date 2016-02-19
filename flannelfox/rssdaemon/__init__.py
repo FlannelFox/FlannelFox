@@ -14,12 +14,12 @@
 
 
 # System Includes
-import time, re, zlib, sys, platform, signal
+import time, re, sys, signal, os
 
+import daemon
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 from time import gmtime, strftime
-import os.path as OsPath
 
 # Third party modules
 import requests
@@ -30,6 +30,7 @@ urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 # flannelfox Includes
 import flannelfox
+from flannelfox import logging
 from flannelfox import Settings
 
 # rssdaemon Includes
@@ -37,7 +38,12 @@ from flannelfox.torrenttools import Torrents, TorrentQueue
 from flannelfox.torrenttools.Torrents import TORRENT_TYPES
 
 
+# TODO: can this be moved?
 httpRegex = re.compile(r"https?://([^/]+)(?:/.*)?")
+
+# Setup the logging agent
+logger = logging.getLogger(__name__)
+
 
 def __readRSSFeed(url):
 
@@ -47,27 +53,22 @@ def __readRSSFeed(url):
     encoding = "utf-8"
 
     try:
-        #if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO: print "Fetching URL: [{0}]".format(url)
-        # Open the URL and get the data
-        #opener = urllib2.build_opener()
-        #opener.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0')]
-        #opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        #opener.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36')]
-        
+
+        # initialize the responses
         response = None
 
-        try:
-            headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36'}
-            r = requests.get(url, headers=headers, timeout=60)
-            response = r.content
-            httpCode = r.status_code
-            encoding = r.encoding
-            # print "RSS fetch OK URL: [{0}]\n[{1}]".format(url,r.status_code)
-        except Exception as e:
-            print "There was a problem opening the URL: [{0}]\n[{1}]".format(url,e)
+        # Setup the headers
+        headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36'}
+
+        # Open the URL and get the data
+        r = requests.get(url, headers=headers, timeout=60)
+        response = r.content
+        httpCode = r.status_code
+        encoding = r.encoding
+        logger.debug("RSS fetch OK URL: [{0}]\n[{1}]".format(httpRegex.match(url).group(1),r.status_code))
 
     except Exception as e:
-        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "There was a problem fetching the URL: [{0}]\n{1}".format(url,e)
+        logger.error("There was a problem fetching the URL: [{0}]\n{1}".format(url,e))
         
     return (response, httpCode, encoding)
 
@@ -120,25 +121,24 @@ def __rssToTorrents(xmlData,feedType=u"none",feedDestination=None,minRatio=0.0,m
 
 
             except (KeyError) as e:
-                if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "A valid Feed Type was not specified:\n{0}".format(e)
+                logger.debug("A valid Feed Type was not specified:\n{0}".format(e))
 
             except (TypeError, ValueError) as e:
-                if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem creating a torrent:\n{0}".format(e)
+                logger.debug("There was a problem creating a torrent:\n{0}".format(e))
 
         rssItems = None
 
     except (IOError,ValueError,ET.ParseError) as e:
-        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR:
-            print "There was a problem reading the RSS Feed:\n{0}".format(e)
-            print xmlData[:300]
-       
-        return rssTorrents
+        logger.error("There was a problem reading the RSS Feed:\n{0}".format(e))
 
     return rssTorrents
 
 
 def __rssThread(majorFeed):
+
+    # This is needed to ensure Keyboard driven interruptions are handled correctly
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     rssTorrents = []
 
     try:
@@ -155,7 +155,7 @@ def __rssThread(majorFeed):
             # Read URL
             rssData, httpCode, encoding = __readRSSFeed(minorFeed["url"])
 
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO: print "Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode)
+            logger.info("Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
 
             # If we did not get any data or there was an error then skip to the next feed
             if rssData is None or httpCode != 200:
@@ -175,12 +175,8 @@ def __rssThread(majorFeed):
         # Garbage Collection
         minorFeed = rssData = torrents = None
 
-        #for torrent in rssTorrents:
-        #    print "__rssThread Results: {0}".format(torrent["torrentTitle"])
-
     except Exception as e:
-        print "Thread ERROR: {0}".format(minorFeed["url"])
-        print "Exception: {0}".format(e)
+        logger.error("Thread ERROR: {0} Exception: {1}".format(minorFeed["url"]),e)
         rssTorrents = []
 
     return rssTorrents
@@ -190,6 +186,8 @@ def rssReader():
     '''
     This thread will take care of Processing RSS Feeds
     '''
+
+    logger.info('RSSDaemon Started')
 
     while True:
 
@@ -204,12 +202,10 @@ def rssReader():
         rssTorrents = TorrentQueue.Queue()
 
         # If single thread is specified then do not fork
+        # TODO: this should not happen and will be removed
         if flannelfox.settings['maxRssThreads'] == 1:
             for majorFeed in majorFeeds.itervalues():
-                if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO: 
-                    print "#########################"
-                    print "Feed Name: {0}".format(majorFeed["feedName"])
-                    print "#########################"
+                logger.info("Feed Name: {0}".format(majorFeed["feedName"]))
 
                 result = __rssThread(majorFeed)
 
@@ -221,12 +217,12 @@ def rssReader():
             rssPool = Pool(processes=flannelfox.settings['maxRssThreads'])
 
             try:
-                print "Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+                logger.info("Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
                 results = [rssPool.apply_async(__rssThread, (f,)) for f in majorFeeds.itervalues()]
                 rssPool.close()
 
             except Exception as e:
-                if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was an error fetching the RSS Feeds.\n{0}".format(e)
+                logger.error("There was an error fetching the RSS Feeds.\n{0}".format(e))
                 rssPool.terminate()
 
             finally:
@@ -234,36 +230,29 @@ def rssReader():
 
 
             # Try to get the rssFeeds and return the resutls
+            logger.info('Appending items to the queue')
+            
             try:
+                
+
                 for result in results:
 
                     try:
                         result = result.get(timeout=1)
                     except Exception as e:
-                        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "TEST ERROR\n{0}".format(e)
+                        logger.warning("There was a problem with reading one of the result sets.\n{0}".format(e))
                         continue
-
-                    if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG:
-                        print 'Appending items to the torrent queue'
 
                     #Take each item in the result and append it to the Queue
                     for r in result:
                         rssTorrents.append(r)
 
             except Exception as e:
-                if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "There was a problem getting the data from the result pool\n{0}".format(e)
+                logger.error("There was a problem appending data to the queue.\n{0}".format(e))
 
-            print "###################################"
-            print "Pool fetch of RSS Done {0}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-            print "###################################"
-
-        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR:
-            print "###################################"
-            print "# {0} records loaded from RSS Feeds".format(len(rssTorrents))
-            print "###################################"
+        logger.info("Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
 
         # Write matching filters to database
-        #if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "RSSQUEUE:\n {0}".format(rssTorrents)
         rssTorrents.writeToDB()
 
         # Garbage collection
@@ -281,14 +270,19 @@ def main():
     TODO: Implement threading or multiprocessing
     '''
 
-    try:
-        rssReader()
+    with daemon.DaemonContext(
+        files_preserve = [
+            logging.getFileHandle(__name__).stream
+        ]
+    ):
+        try:
+            rssReader()
 
-    except KeyboardInterrupt as e:
-        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "Application Aborted"
+        except KeyboardInterrupt as e:
+            logger.error("Application Aborted")
 
-    finally:
-        if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.ERROR: print "Application Exited"
+        finally:
+            logger.info("Application Exited")
 
         
 if __name__ == '__main__':

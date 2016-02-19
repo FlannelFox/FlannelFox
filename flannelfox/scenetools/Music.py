@@ -24,14 +24,11 @@ def parseTitle(title):
     # badPrefixRegex = re.compile(ur"(?:"+")|(?:".join(Settings.BAD_PREFIXES)+ur")")
     title = re.sub(ur"(?:"+")|(?:".join(Settings.BAD_PREFIXES)+ur")", "", title, flags=re.IGNORECASE)
 
-    #print "Title {0}".format(title)
-
     # Meta data sanitization
     for key, val in Settings.KEYWORD_SYNONYMS.iteritems():
         title = re.sub(key, val, title, flags=re.IGNORECASE)
 
 
-    if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "Checking Music Title {0}".format(title)
     '''
     List of parsing regex to try and extract data from the file title,
     this list should also be in order of searching preference
@@ -95,8 +92,6 @@ def parseTitle(title):
             if val is not None:
                audioProperties[unicode(key)] = unicode(val.strip(SeparatorCharacters.SeparatorCharactersStr+SeparatorCharacters.SeparatorSpecialCharactersStr))
 
-    if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "Parsed Data {0}".format(audioProperties)
-
     return audioProperties
 
 
@@ -105,8 +100,6 @@ def parseMetaData(meta):
     Try to extract meta data out of the remaining file title and return a dict
     of metadata
     '''
-
-    if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "Raw Data {0}".format(meta)
 
     metaData = {}
 
@@ -140,7 +133,5 @@ def parseMetaData(meta):
         if proper.lower() in meta:
             metaData["proper"] = unicode(True)
             break
-
-    if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.DEBUG: print "Parsed Data {0}".format(metaData)
 
     return metaData
