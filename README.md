@@ -4,7 +4,7 @@ FlannelFox is a Python application that can monitor a torrent client and perform
 * Manage how many torrents are running at a time
 * Automatically load torrents from RSS feeds based on user defined filters
 
-[![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox/blob/master/License.md)
 [![Github All Releases](https://img.shields.io/github/downloads/FlannelFox/FlannelFox/total.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox)
 
 #What will it download and how does it know what I want?
