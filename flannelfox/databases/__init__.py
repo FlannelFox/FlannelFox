@@ -12,11 +12,15 @@
 # flannelfox Includes
 import flannelfox
 from flannelfox import Settings
-import ff_sqlite3
 
 # Setup the logging agent
 from flannelfox import logging
 logger = logging.getLogger(__name__)
+
+import ff_sqlite3
+
+
+
 
 class Databases:
 
@@ -40,7 +44,6 @@ class Databases:
         These torrents are flagged as broken and should be ignored when
         the grabbers are looking for new torrents
         '''
-        logger.error('Torrent blacklisted: {0}'.format(reason))
         self.Database.addBlacklistedTorrent(url=url, reason=reason)
 
 
@@ -58,15 +61,7 @@ class Databases:
 
         Takes a queue of torrents as a parameter
         '''
-
-        try:
-            return self.Database.addTorrentsToQueue(queue=queue)
-
-        except Exception as e:
-            logger.error("There was an issue adding torrents to the database. {0}".format(e))
-            return False
-
-        return True
+        return self.Database.addTorrentsToQueue(queue=queue)
 
 
     def deleteTorrent(self, hashString=None,url=None,reason='No Reason Given'):
@@ -75,12 +70,7 @@ class Databases:
         
         Takes a torrent as a parameter
         '''
-        try:
-            logger.info('Torrent deleted from database: {0}'.format(reason))
-            return self.Database.deleteTorrent(hashString=hashString, url=url, reason=reason)
-
-        except Exception as e:
-            logger.error("There was an issue deleting a torrent from the database. {0}".format(e))
+        return self.Database.deleteTorrent(hashString=hashString, url=url, reason=reason)
 
 
     def torrentExists(self, torrent=None, url=None, hashString=None):
@@ -93,13 +83,7 @@ class Databases:
 
         Returns True if it exists or False if it does not
         '''
-       
-        try:
-            return self.Database.torrentExists(torrent=torrent, url=url, hashString=hashString)
-
-        except Exception as e:
-            logger.error("There was an issue checking if a torrent exists in the database. {0}".format(e))
-            return False
+        return self.Database.torrentExists(torrent=torrent, url=url, hashString=hashString)
 
 
     def torrentBlacklisted(self, url=None):
@@ -126,13 +110,7 @@ class Databases:
 
 
         '''
-
-        try:
-            return self.Database.execDB(query=query)
-                
-        except Exception as e:
-            logger.error("There was an issue executing a database execution. {0}".format(e))
-            return 0
+        return self.Database.execDB(query=query)
 
 
     def queryDB(self, query):
@@ -145,13 +123,7 @@ class Databases:
         Returns:
             a list of dicts, each dict holding the row information
         '''
-
-        try:
-            return self.Database.queryDB(query=query)
-
-        except Exception as e:
-            logger.error("There was an issue executing a database query. {0}".format(e))
-            return {}
+        return self.Database.queryDB(query=query)
 
 
     def getTorrentInfo(self, hashString=None,fields=[]):
@@ -165,13 +137,7 @@ class Databases:
         Returns:
             Dict of key,val
         '''
-
-        try:
-            return self.Database.getTorrentInfo(hashString=hashString, fields=fields)
-
-        except Exception as e:
-            logger.error("There was an issue getting torrent information. {0}".format(e))
-            return {}
+        return self.Database.getTorrentInfo(hashString=hashString, fields=fields)
 
 
     def getQueuedTorrents(self, fields=[],num=None):
@@ -185,13 +151,7 @@ class Databases:
         Returns:
             Dict of key,val
         '''
-
-        try:
-            return self.Database.getQueuedTorrents(fields=fields, num=num)
-
-        except Exception as e:
-            logger.error("There was an issue getting queued torrents. {0}".format(e))
-            return []
+        return self.Database.getQueuedTorrents(fields=fields, num=num)
 
 
     def getQueuedTorrentsCount(self):
@@ -201,9 +161,4 @@ class Databases:
         Returns:
             int
         '''
-
-        try:
-            return self.Database.getQueuedTorrentsCount()
-        except Exception as e:
-            logger.error("There was an issue getting a queued torrent count. {0}".format(e))
-            return -1
+        return self.Database.getQueuedTorrentsCount()

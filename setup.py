@@ -5,12 +5,10 @@ setup(name = 'flannelfox',
       packages = find_packages(),
       package_data={'flannelfox': ['flannelfox/data/*', 'flannelfox/data/config/*']},
       data_files = [
-        (osPath.join(osPath.expanduser('~'),'.flannelfox/'), ['flannelfox/data/flannelfox.db']),
-        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/rssfeeds'), ['flannelfox/data/config/feeds/rssfeeds/rss.json']),
-        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/lastfmfeeds'), ['flannelfox/data/config/feeds/lastfmfeeds/LastfmArtistsConfig.json']),
-        #(osPath.join(osPath.expanduser('~'),'.flannelfox/config'), ['flannelfox/data/config/python.inc']),
-        (osPath.join(osPath.expanduser('~'),'.flannelfox/config'), ['flannelfox/data/config/settings.json']),
-        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/traktfeeds'), ['flannelfox/data/config/feeds/traktfeeds/TraktConfig.json'])
+        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/rssfeeds'), ['flannelfox/data/config/feeds/rssfeeds/rss.json.example']),
+        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/lastfmfeeds'), ['flannelfox/data/config/feeds/lastfmfeeds/lastfmartists.json.example']),
+        (osPath.join(osPath.expanduser('~'),'.flannelfox/config'), ['flannelfox/data/config/settings.json.example']),
+        (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/traktfeeds'), ['flannelfox/data/config/feeds/traktfeeds/traktconfig.json.example'])
       ],
       entry_points = {
         'console_scripts': [

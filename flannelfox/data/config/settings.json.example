@@ -1,0 +1,18 @@
+{
+    "client":{
+        "name": "transmission-server1",
+        "type": "transmission",
+        "host": "127.0.0.1",
+        "https": false,
+        "port": "9091",
+        "rpcLocation": "transmission/rpc",
+        "user": "",
+        "password": ""
+    },
+    "maxUsedSpace": 1250,
+    "queueManagement":{
+        "maxTorrents": 5000,
+        "maxDownloadingTorrents": 15
+    },
+    "debugLevel": "info"
+}

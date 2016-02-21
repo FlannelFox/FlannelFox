@@ -3,8 +3,8 @@
 # Purpose:     These functions handle writing/reading torrent information
 #              to/from the sqlite database
 #
-# TODO: Turn this into a class that can be instantiated as various
-#       database types.
+# TODO: update the sql statements so they are injection proof
+#       https://docs.python.org/2/library/sqlite3.html
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
@@ -21,6 +21,13 @@ from flannelfox.torrenttools import Torrents
 # Import the Torrent Types
 from flannelfox.torrenttools.Torrents import TORRENT_TYPES
 
+# Import Database exception
+from flannelfox.databases.exceptions import DatabaseException
+
+# Setup the logging agent
+from flannelfox import logging
+logger = logging.getLogger(__name__)
+
 # Database info
 TORRENT_DB = flannelfox.settings['files']['privateDir']+ur"/flannelfox.db"
 QUEUED_TORRENTS_TABLE = ur"QueuedTorrents"
@@ -32,7 +39,31 @@ MOVIE_TORRENTS_VIEW = ur"MovieTorrentsView"
 MUSIC_TORRENTS_VIEW = ur"MusicTorrentsView"
 GENERIC_TORRENTS_VIEW = ur"GenericTorrentsView"
 
+
 class Database:
+
+    def __init__(self):
+
+        dbSetup = ( "PRAGMA foreign_keys = off;"
+            "BEGIN TRANSACTION;"
+            "CREATE TABLE QueuedTorrents (comparison TEXT, hashString TEXT, feedDestination TEXT, minRatio REAL, minTime INTEGER, addedOn INTEGER, added INTEGER, queuedOn INTEGER, torrentType INTEGER, proper TEXT, source TEXT, container TEXT, codec TEXT, quality TEXT, day INTEGER, month INTEGER, year INTEGER, torrentTitle TEXT, url TEXT, title TEXT, season INTEGER, episode INTEGER, releaseType TEXT, album TEXT, artist TEXT);"
+            "CREATE TABLE BlacklistedTorrents (url STRING PRIMARY KEY);"
+            "CREATE INDEX idx_Queue ON QueuedTorrents (added COLLATE BINARY ASC, queuedOn COLLATE BINARY ASC);"
+            "CREATE INDEX idx_FeedDestination ON QueuedTorrents (feedDestination COLLATE BINARY ASC);"
+            "CREATE INDEX idx_Added ON QueuedTorrents (added COLLATE BINARY DESC);"
+            "CREATE INDEX idx_HashString ON QueuedTorrents (hashString COLLATE BINARY ASC);"
+            "CREATE INDEX idx_TorrentType ON QueuedTorrents (torrentType COLLATE BINARY ASC);"
+            "CREATE VIEW GenericTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.day, QueuedTorrents.month, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.season, QueuedTorrents.episode, QueuedTorrents.codec, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE torrentType = 'none';"
+            "CREATE VIEW QueuedTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.day, QueuedTorrents.month, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.season, QueuedTorrents.episode, QueuedTorrents.codec, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE added = 0 ORDER BY queuedOn ASC;"
+            "CREATE VIEW MovieTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.codec, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE torrentType = 'movie';"
+            "CREATE VIEW MusicTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.album, QueuedTorrents.artist, QueuedTorrents.codec, QueuedTorrents.releaseType, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE torrentType = 'music';"
+            "CREATE VIEW AddedTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.day, QueuedTorrents.month, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.season, QueuedTorrents.episode, QueuedTorrents.codec, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE added = 1 ORDER BY queuedOn ASC;"
+            "CREATE VIEW TVTorrentsView AS SELECT QueuedTorrents.comparison, QueuedTorrents.hashstring, QueuedTorrents.feeddestination, QueuedTorrents.minratio, QueuedTorrents.mintime, QueuedTorrents.addedon, QueuedTorrents.added, QueuedTorrents.queuedon, QueuedTorrents.day, QueuedTorrents.month, QueuedTorrents.year, QueuedTorrents.torrenttitle, QueuedTorrents.url, QueuedTorrents.title, QueuedTorrents.season, QueuedTorrents.episode, QueuedTorrents.codec, QueuedTorrents.container, QueuedTorrents.proper, QueuedTorrents.quality, QueuedTorrents.source, QueuedTorrents.torrentType FROM QueuedTorrents WHERE torrentType = 'tv';"
+            "COMMIT TRANSACTION;"
+            "PRAGMA foreign_keys = on;" )
+
+        self.__execScriptDB(dbSetup)
+
 
     def dictFactory(self, cursor, row, ignore=None):
         '''
@@ -54,6 +85,7 @@ class Database:
 
         return d
 
+
     def addBlacklistedTorrent(self, url, reason='No Reason Given'):
         '''
         Add a torrent to the blacklist
@@ -63,7 +95,11 @@ class Database:
         '''
 
         query = u"INSERT INTO {0} ('url') VALUES ('{1}')".format(BLACKLISTED_TORRENTS_TABLE, url)
-        self.__execDB(query)
+
+        result = self.__execDB(query)
+        
+        if result < 1:
+            logger.warning("There was a problem blacklisting a torrent:\n{0}\n{1}".format(e, query))
 
 
     def updateHashString(self, update, using):
@@ -87,7 +123,11 @@ class Database:
 
 
         query = u"UPDATE {0} SET {1} WHERE {2}".format(QUEUED_TORRENTS_TABLE,data,selectors)
-        self.__execDB(query)
+        
+        result = self.__execDB(query)
+        
+        if result < 0:
+            logger.warning("There was a problem updating the hashstring of a torrent:\n{0}\n{1}".format(e, query))
 
 
     def addTorrentsToQueue(self, queue):
@@ -134,15 +174,15 @@ class Database:
 
             # Insert each torrent into the DB
             for statement in insertStatements:
-                self.__execDB(statement)
+                
+                result = self.__execDB(statement)
+                
+                if result < 0:
+                    logger.warning("There was a problem adding torrents to the queue:\n{0}\n{1}".format(e, statement))
 
-        except sql.Error as e:
-            ''' TODO do something smart when this happens '''
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
-            return False
-        
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
+
+        except (sql.Error, Exception) as e:
+            logger.warning("There was a problem adding torrents to the queue:\n{0}\n{1}".format(e, statement))
             return False
 
         return True
@@ -171,12 +211,9 @@ class Database:
 
             self.__execDB(query)
 
-        except sql.Error as e:
-            ''' TODO do something smart when this happens '''
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
-            pass
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem deleting a torrent:\n{0}\n{1}".format(e, statement))
+
 
 
     def torrentBlacklisted(self, url=None):
@@ -192,6 +229,7 @@ class Database:
             return True
         else:
             return False
+
 
     def torrentExists(self, torrent=None, url=None, hashString=None):
         '''
@@ -256,15 +294,9 @@ class Database:
             else:
                 return False
 
-        except sql.Error as e:
-            ''' TODO do something smart when this happens '''
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, statement))
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem checking if a torrent exists:\n{0}\n{1}".format(e, statement))
 
-            # This is false because we were not able to get an answer back
-            return False
-        
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
             # This is false because we were not able to get an answer back
             return False
 
@@ -287,18 +319,42 @@ class Database:
 
                 # Establish a cursor and then make the query
                 sqlCursor = sqlConnection.cursor()
-
                 sqlCursor.execute(query)
 
                 return sqlCursor.rowcount
 
-        except sql.Error as e:
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
-            return 0
-        
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
-            return 0
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem executing the SQL exec:\n{0}\n{1}".format(e, query))
+            return -2
+
+
+    def __execScriptDB(self, script):
+        '''
+        Executes a query and tries to do any cleanup if there is an issue
+
+
+        '''
+
+        try:
+
+            # SQL Connection
+            sqlConnection = sql.connect(TORRENT_DB)
+
+            with sqlConnection:
+
+                # Set the results to be in dictionary form
+                sqlConnection.row_factory = self.dictFactory
+
+                # Establish a cursor and then make the query
+                sqlCursor = sqlConnection.cursor()
+
+                sqlCursor.executescript(script)
+
+                return sqlCursor.rowcount
+
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem executing the SQL execscript:\n{0}\n{1}".format(e, script))
+            return -2
 
 
     def __queryDB(self, query):
@@ -333,12 +389,8 @@ class Database:
 
             return rows
 
-        except sql.Error as e:
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
-            return {}
-
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return {}
 
 
@@ -379,12 +431,8 @@ class Database:
 
             return results
 
-        except sql.Error as e:
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
-            return {}
-
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem getting torrent info:\n{0}\n{1}".format(e, query))
             return {}
 
 
@@ -445,12 +493,8 @@ class Database:
             else:
                 return results
 
-        except sql.Error as e:
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
-            return []
-
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem getting queued torrents:\n{0}\n{1}".format(e, query))
             return []
 
 
@@ -472,10 +516,6 @@ class Database:
             
             return results[0][u"downloadsQueued"]
         
-        except sql.Error as e:
-            logger.debug("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
-            return -1
-
-        except Exception as e:
-            ''' TODO do something smart when this happens '''
+        except ( sql.Error, Exception ) as e:
+            logger.warning("There was a problem getting a count of queued torrents:\n{0}\n{1}".format(e, query))
             return -1
