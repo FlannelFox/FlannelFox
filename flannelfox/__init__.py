@@ -92,6 +92,10 @@ settings = {
     "maxRssThreads": 8
 }
 
+# Setup the logging agent
+from flannelfox import logging
+logger = logging.getLogger(__name__)
+
 def update(a, b):
     '''
     updates a with b recursively
@@ -110,9 +114,8 @@ def update(a, b):
 try:
     with open(settings['files']['settingsConfigFile'],'r') as config:
         settings = update(settings, json.load(config))
-        #logger.error('External settings file found')
+        logger.info('External settings file found')
 except Exception as e:
-    pass
-    #logger.error('Could not load external settings file: {0}'.format(e))
+    logger.warning('Could not load external settings file: {0}'.format(e))
 
 import Settings
