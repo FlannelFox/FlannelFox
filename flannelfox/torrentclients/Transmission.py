@@ -264,7 +264,7 @@ class Client(object):
         return (torrents,httpResponseCode,transmissionResponseCode)
 
 
-    def __updateHashString(self,using=None,update=None):
+    def __updateHashString(self, using=None, update=None):
         '''
         Updated the hash string for a torrent in the database
 
@@ -283,7 +283,7 @@ class Client(object):
         Updates the class variable queue with the latest torrent queue info
 
         Returns:
-            Tuple (transmissionResponseCode,httpResponseCode)
+            Tuple (transmissionResponseCode, httpResponseCode)
         '''
 
         # Initial attempt at fetching data
@@ -292,7 +292,7 @@ class Client(object):
         # Incase we get an incomplete answer or fail let's retry
         tries = 0
         while transmissionResponseCode != Responses.success and tries < TRANSMISSION_MAX_RETRIES:
-            torrents,httpResponseCode,transmissionResponseCode = self.__getTorrents()
+            torrents, httpResponseCode, transmissionResponseCode = self.__getTorrents()
             tries += 1
 
         if isinstance(torrents,list):

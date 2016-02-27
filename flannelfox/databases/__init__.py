@@ -22,7 +22,7 @@ import ff_sqlite3
 
 
 
-class Databases:
+class Databases(object):
 
     def __init__(self, dbType):
         '''

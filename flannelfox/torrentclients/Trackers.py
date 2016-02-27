@@ -6,7 +6,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-class Responses:
+class Responses(object):
     Remove = [
         'unregistered torrent',
         'Unregistered torrent',

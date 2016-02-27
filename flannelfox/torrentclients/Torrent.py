@@ -15,7 +15,7 @@ from flannelfox.databases import Databases
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 
-class Status:
+class Status(object):
     Paused = 0
     QueuedForVerification = 1
     Verifying = 2
@@ -119,6 +119,13 @@ class Torrent(object):
 
     def __str__(self):
         return unicode(self).encode("utf-8")
+
+
+    def get(self, key, default=None):
+        try:
+            return self.__getitem__(key)
+        except:
+            return default
 
 
     def iteritems(self):
