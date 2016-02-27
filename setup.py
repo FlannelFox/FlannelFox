@@ -24,6 +24,8 @@ setup(name = 'flannelfox',
         "pyOpenSSL",
         "ndg-httpsclient",
         "pyasn1",
-        "python-daemon"
+        "python-daemon",
+        "lxml",
+        "urllib3"
 	    ]
 )

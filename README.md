@@ -41,24 +41,44 @@ Python 2.7
 * ndg-httpsclient
 * pyasn1
 * python-daemon
+* lxml
+* urllib3
 
 
 #Setup information
 ---------------
-##Create .local to install as a user
-```$> mkdir -p ~/.local/lib/python2.7/site-packages```
+
+##Regular setup
+
+This setup section assumes you want to install flannelfox as a user without privilages to install to system-wide locations.
 
 
-##Add ~/.local/bin to your path
-```$> echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc```
+```
+#Create .local to install as a user
+$> mkdir -p ~/.local/lib/python2.7/site-packages
+
+#Add ~/.local/bin to your path
+$> echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+
+#Build/Install FlannelFox
+$> python setup.py install --prefix=~/.local
+
+#Starting FlannelFox
+$> flannelfox-init start
+```
 
 
-##Build/Install FlannelFox
-```$> python setup.py install --prefix=~/.local```
 
+##Virtualenv
+FlannelFox can and should be run from a virtualenv setup to ensure that dependancies are met and do not clash with other packages, the install in a virtualenv setup is very similar, just minus the ```--prefix=~/.local``` switches.
 
-##Starting FlannelFox
-```$> flannelfox-init start```
+```
+#Build/Install FlannelFox
+$> python setup.py install
+
+#Starting FlannelFox
+$> flannelfox-init start
+```
 
 
 #Submissions
@@ -183,8 +203,8 @@ Movies have many of the same filters as TV with a couple of exceptions; episode 
     * sacd
     * dat
     * cassette
-    * web-dl
-    * blu-ray
+    * webdl
+    * bluray
 
 
 ##Other

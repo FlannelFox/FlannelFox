@@ -63,7 +63,7 @@ def __readRSSFeed(url):
         response = r.content
         httpCode = r.status_code
         encoding = r.encoding
-        logger.debug("RSS fetch OK URL: [{0}]\n[{1}]".format(httpRegex.match(url).group(1),r.status_code))
+        logger.debug("RSS fetch OK URL: [{0}]|[{1}]".format(httpRegex.match(url).group(1),r.status_code))
 
     except Exception as e:
         logger.error("There was a problem fetching the URL: [{0}]\n{1}".format(url,e))
@@ -128,6 +128,7 @@ def __rssToTorrents(xmlData,feedType=u"none",feedDestination=None,minRatio=0.0,m
 
     except (IOError,ValueError,ET.ParseError) as e:
         logger.error("There was a problem reading the RSS Feed:\n{0}".format(e))
+
 
     return rssTorrents
 
