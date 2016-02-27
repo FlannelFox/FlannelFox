@@ -30,7 +30,7 @@ from flannelfox.databases import Databases
 from flannelfox import logging
 logger = logging.getLogger(__name__)
 
-import transmission
+import Transmission
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
