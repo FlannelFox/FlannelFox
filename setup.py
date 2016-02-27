@@ -1,11 +1,12 @@
 import os.path as osPath
+import sys
 from setuptools import setup, find_packages
 setup(name = 'flannelfox',
       version = '0.1.9',
       packages = find_packages(),
       package_data={'flannelfox': ['flannelfox/data/*']},
       data_files = [
-        ('bin', ['flannelfox/data/bin/flannelfox-init']),
+        (sys.prefix, ['flannelfox/data/bin/flannelfox-init']),
         (osPath.join(osPath.expanduser('~'),'.flannelfox/config'), ['flannelfox/data/config/settings.json.example']),
         (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/rssfeeds'), ['flannelfox/data/config/feeds/rssfeeds/rss.json.example']),
         (osPath.join(osPath.expanduser('~'),'.flannelfox/config/feeds/lastfmfeeds'), ['flannelfox/data/config/feeds/lastfmfeeds/lastfmartists.json.example']),

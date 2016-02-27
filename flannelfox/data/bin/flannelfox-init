@@ -1,19 +1,16 @@
 #!/bin/sh
 
-# If you plan on using a virtualenv setup then make sure you
-# have the VIRTUALENV variable point to the directory in which
-# the virutal environment exists.
-VIRTUALENV=""
 SCRIPT=$(readlink -f $0)
-BINPATH=$(dirname ${SCRIPT})
-LIBPATH="$(dirname ${BINPATH})/lib"
-LIB64PATH="$(dirname ${BINPATH})/lib64/"
+SCRIPTPATH=$(dirname ${SCRIPT})
 HTTP_DAEMON="HttpDaemon.py"
 RSS_DAEMON="RSSDaemon"
 QUEUE_DAEMON="QueueDaemon"
 
-if [ $VIRTUALENV != "" ]; then
-  source "$VIRTUALENV/bin/activate"
+
+# Try to automatically detect if we are in an virtualenv
+# setup. If we are then let's use it
+if [ "$VIRTUAL_ENV" != "" ]; then
+  source "${VIRTUAL_ENV}/bin/activate"
 fi
 
 # Carry out specific functions when asked to by the system
@@ -27,7 +24,7 @@ case "$1" in
       echo "* $HTTP_DAEMON is Already running"
     else
       echo "* Starting $HTTP_DAEMON"
-      screen -dmS HttpDaemon ${HTTP_DAEMON_LOCATION}${HTTP_DAEMON}
+      screen -dmS HttpDaemon ${HTTP_DAEMON}
     fi
     ;;
   startrss)
