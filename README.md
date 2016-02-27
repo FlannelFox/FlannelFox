@@ -7,6 +7,7 @@ FlannelFox is a Python application that can monitor a torrent client and perform
 [![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox/blob/master/License.md)
 [![Github All Releases](https://img.shields.io/github/downloads/FlannelFox/FlannelFox/total.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox)
 
+
 #What will it download and how does it know what I want?
 FlannelFox uses a set of JSON files (.json) that allow you to let it know what you want in three (3) ways:
 
@@ -17,6 +18,7 @@ FlannelFox uses a set of JSON files (.json) that allow you to let it know what y
 * **Plain text matching** - Create rule sets in the `~/.flannelfox/config/feeds/rssfeeds` folder and they will be used to match the text entered against the feeds you specify. This is the most basic form of matching and can be a bit tedious. It is needed however, for those odd names that can not be pulled from Trakt or LastFM in a form the trackers use.
 
 [Example config files](#example-config-files)
+
 
 #How do I edit these files and what type of filtering can I do?
 The filtering engine is fairly robust and as such can take a number of different items depending on the feed type chosen. The feed types and keywords each uses are:
@@ -41,19 +43,22 @@ Python 2.7
 * python-daemon
 
 
-
 #Setup information
 ---------------
 ##Create .local to install as a user
-```mkdir -p ~/.local/lib/python2.7/site-packages```
+```$> mkdir -p ~/.local/lib/python2.7/site-packages```
 
 
 ##Add ~/.local/bin to your path
-```echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc```
+```$> echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc```
 
 
 ##Build/Install FlannelFox
-```python setup.py install --prefix=~/.local```
+```$> python setup.py install --prefix=~/.local```
+
+
+##Starting FlannelFox
+```$> flannelfox-init start```
 
 
 #Submissions
