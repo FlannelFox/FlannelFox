@@ -44,7 +44,7 @@ class Generic(object):
             self.elements['url'] = url
 
 
-    def __getitem__(self,key):
+    def __getitem__(self, key):
 
         # Ensure the key exists
         if key not in self.elements:
@@ -100,6 +100,11 @@ class Generic(object):
 
         return True
 
+    def get(self, key, default=None):
+        try:
+            return self.__getitem__(key)
+        except:
+            return default
 
     def iteritems(self):
         return self.elements.iteritems()

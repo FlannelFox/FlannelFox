@@ -67,7 +67,7 @@ class Queue(object):
             return -1
 
         # Ensure it is not Blacklisted
-        elif TorrentDB.torrentBlacklisted(val['url']):
+        elif TorrentDB.torrentBlacklisted(val.get('url',''):
             return -1
 
         # Append the value to elements
