@@ -40,7 +40,7 @@ MUSIC_TORRENTS_VIEW = ur"MusicTorrentsView"
 GENERIC_TORRENTS_VIEW = ur"GenericTorrentsView"
 
 
-class Database:
+class Database(object):
 
     def __init__(self):
 
