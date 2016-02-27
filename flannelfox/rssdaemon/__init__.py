@@ -59,7 +59,7 @@ def __readRSSFeed(url):
         headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36'}
 
         # Open the URL and get the data
-        r = requests.get(url, headers=headers, timeout=60)
+        r = requests.get(url, headers=headers, timeout=10)
         response = r.content
         httpCode = r.status_code
         encoding = r.encoding
