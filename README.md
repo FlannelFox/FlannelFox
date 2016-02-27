@@ -48,36 +48,44 @@ Python 2.7
 #Setup information
 ---------------
 
-##Regular setup
-
-This setup section assumes you want to install flannelfox as a user without privilages to install to system-wide locations.
-
-
-```
-#Create .local to install as a user
-$> mkdir -p ~/.local/lib/python2.7/site-packages
-
-#Add ~/.local/bin to your path
-$> echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
-
-#Build/Install FlannelFox
-$> python setup.py install --prefix=~/.local
-
-#Starting FlannelFox
-$> flannelfox-init start
-```
-
-
 
 ##Virtualenv
 FlannelFox can and should be run from a virtualenv setup to ensure that dependancies are met and do not clash with other packages, the install in a virtualenv setup is very similar, just minus the ```--prefix=~/.local``` switches.
 
 ```
+#Setup the virtual environment
+$ > virtualenv flannelfox-env
+$ > cd flannelfox-env
+
+#Download and extract flannelfox
+flannelfox-env $ > wget https://github.com/FlannelFox/FlannelFox/archive/master.zip -O flannelfox.zip
+flannelfox-env $ > unzip -o flannelfox.zip
+
 #Build/Install FlannelFox
-$> python setup.py install
+$flannelfox-env $ > cd FlannelFox-master
+$flannelfox-env/FlannelFox-master $ > python setup.py install
 
 #Starting FlannelFox
-$> flannelfox-init start
+$flannelfox-env/FlannelFox-master $ > cd ..
+$flannelfox-env $ > ./flannelfox-init start
+```
+
+
+##Non Virtualenv setup
+
+This setup section assumes you want to install flannelfox as a user without privilages to install to system-wide locations.
+```
+#Create .local to install as a user
+$ > mkdir -p ~/.local/lib/python2.7/site-packages
+
+#Add ~/.local/bin to your path
+$ > echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+
+#Build/Install FlannelFox
+$ > python setup.py install --prefix=~/.local
+
+#Starting FlannelFox
+$ > flannelfox-init start
 ```
 
 

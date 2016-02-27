@@ -7,10 +7,10 @@ RSS_DAEMON="RSSDaemon"
 QUEUE_DAEMON="QueueDaemon"
 
 
-# Try to automatically detect if we are in an virtualenv
-# setup. If we are then let's use it
-if [ "$VIRTUAL_ENV" != "" ]; then
-  source "${VIRTUAL_ENV}/bin/activate"
+# Uncomment the section below if you would like to
+# try and auto-detect a virtualenvironment
+if [ "$VIRTUAL_ENV" == "" ] && [ -e "${SCRIPTPATH}/bin/activate" ]; then
+  source "${SCRIPTPATH}/bin/activate"
 fi
 
 # Carry out specific functions when asked to by the system
