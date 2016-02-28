@@ -7,69 +7,69 @@
 
 # Video selectors, used to determine video properties, should be in order of accuracy
 Quality = [
-    "480p",
-    "480i",
-    "576p",
-    "576i",
-    "720p",
-    "720i",
-    "1080p",
-    "1080i",
-    "sd"
+    u"480p",
+    u"480i",
+    u"576p",
+    u"576i",
+    u"720p",
+    u"720i",
+    u"1080p",
+    u"1080i",
+    u"sd"
 ]
 
 
 Container = [
-    "mp4",
-    "vob",
-    "mpeg",
-    "iso",
-    "wmv",
-    "m4v",
-    "m2ts",
-    "avi",
-    "ts",
-    "mkv"
+    u"mp4",
+    u"vob",
+    u"mpeg",
+    u"iso",
+    u"wmv",
+    u"m4v",
+    u"m2ts",
+    u"avi",
+    u"ts",
+    u"mkv"
 ]
 
 
 Codec = [
-    "xvid",
-    "divx",
-    "dvdr",
-    "h264",
-    "vc-1",
-    "wmv",
-    "x264-hi10p",
-    "x264",
-    "bd",
-    "mpeg2"
+    u"xvid",
+    u"divx",
+    u"dvdr",
+    u"h264",
+    u"vc-1",
+    u"wmv",
+    u"x264-hi10p",
+    u"x264",
+    u"bd",
+    u"mpeg2"
 ]
 
 
 Source = [
-    "dsr",
-    "dvdrip",
-    "tvrip",
-    "vhsrip",
-    "bluray",
-    "bdrip",
-    "brrip",
-    "dvd5",
-    "dvd9",
-    "hddvd",
-    "webdl",
-    "webrip",
-    "bd5",
-    "bd9",
-    "bd25",
-    "bd50",
-    "hdtv",
-    "pdtv"
+    u"dsr",
+    u"dvdrip",
+    u"tvrip",
+    u"vhsrip",
+    u"bluray",
+    u"bdrip",
+    u"brrip",
+    u"dvd5",
+    u"dvd9",
+    u"hddvd",
+    u"webdl",
+    u"webrip",
+    u"bd5",
+    u"bd9",
+    u"bd25",
+    u"bd50",
+    u"hdtv",
+    u"pdtv"
 ]
 
 
 Proper = [
-    "proper",
-    "repack"
+    u"proper",
+    u"repack"
 ]

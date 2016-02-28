@@ -25,7 +25,7 @@ class Generic(object):
     '''
 
 
-    def __init__(self,torrentTitle, url=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
+    def __init__(self, torrentTitle, url=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
         if not isinstance(torrentTitle, unicode):
             raise AttributeError(u'torrentTitle must be a string:\n{0}'.format(torrentTitle))
 
@@ -33,8 +33,8 @@ class Generic(object):
 
         # Let's make sure double quotes are escaped
         self.elements['torrentType'] = u'none'
-        self.elements['torrentTitle'] = torrentTitle.replace(u'"',u'')
-        self.elements['title'] = torrentTitle.replace(u'"',u'').lower()
+        self.elements['torrentTitle'] = torrentTitle.replace(u'"', u'')
+        self.elements['title'] = torrentTitle.replace(u'"', u'').lower()
         self.elements['minTime'] = minTime
         self.elements['minRatio'] = minRatio
         self.elements['comparison'] = comparison
@@ -53,7 +53,7 @@ class Generic(object):
         return self.elements[key]
 
 
-    def __setitem__(self,key, val):
+    def __setitem__(self, key, val):
         self.elements[key] = val
 
         # Ensure the value was taken
@@ -71,7 +71,7 @@ class Generic(object):
         return self.iterkeys()
 
 
-    def __contains__(self,element):
+    def __contains__(self, element):
         return element in self.elements
 
 
@@ -87,7 +87,7 @@ class Generic(object):
         return unicode(self).encode('utf-8')
 
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         '''
         Test if two torrents are the same or not
         '''
@@ -238,7 +238,7 @@ class TV(Generic):
             metaData = flannelfox.scenetools.TV.parseTitle(self.elements['title'])
 
         else:
-           super(TV,self).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
+           super(TV, elf).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
            self.elements['torrentType'] = u'tv'
 
         self.populateProperties(metaData)
@@ -249,21 +249,21 @@ class Movie(Generic):
     Torrent Object Specific to Movies
     '''
 
-    def __init__(self, torrentTitle=None,url=None,metaData=None,minTime=0,minRatio=0.0,comparison=u'or',feedDestination=None):
+    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
 
         if metaData is None:
-            super(Movie,self).__init__(torrentTitle,url,minTime=minTime,minRatio=minRatio,comparison=comparison,feedDestination=feedDestination)
+            super(Movie, self).__init__(torrentTitle, url, minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
             self.elements['torrentType'] = u'movie'
 
             # Try to get metadata Dict
             metaData = flannelfox.scenetools.Movie.parseTitle(self.elements['title'])
 
         else:
-            super(Movie, self).__init__(metaData['torrentTitle'],metaData['url'],minTime=minTime,minRatio=minRatio,comparison=comparison,feedDestination=feedDestination)
+            super(Movie, self).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
             self.elements['torrentType'] = u'movie'
 
         self.populateProperties(metaData)
 
 
 # These are acceptable types in the RSSFeedsConfig File
-TORRENT_TYPES = {'tv':TV, 'movie':Movie,'none':Generic,'music':Music}
+TORRENT_TYPES = {'tv':TV, 'movie':Movie, 'none':Generic, 'music':Music}
