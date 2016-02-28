@@ -22,7 +22,7 @@ def parseTitle(title):
 
     # Strip all the possible bad prefixes form the string
     # badPrefixRegex = re.compile(ur"(?:"+")|(?:".join(Settings.BAD_PREFIXES)+ur")")
-    title = re.sub(ur"(?:"+")|(?:".join(Settings.BAD_PREFIXES)+ur")", "", title, flags=re.IGNORECASE)
+    title = re.sub(ur"(?:"+u")|(?:".join(Settings.BAD_PREFIXES)+ur")", u"", title, flags=re.IGNORECASE)
 
     # Meta data sanitization
     for key, val in Settings.KEYWORD_SYNONYMS.iteritems():
@@ -44,40 +44,40 @@ def parseTitle(title):
         re.compile(ur"(?P<title>.+?)[sS](?P<season>\d{1,3})["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?:[eE](?P<episode>\d+[abcde]?))+(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # Find Showname.ep00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Ee][Pp]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>\d{1,3})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[Ee][Pp]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Ee][Pp]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>\d{1,3})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Ee][Pp]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # Find Showname.e00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Ee]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>\d{1,3})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Ee]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>\d{1,3})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # find Showname.0000.00.00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<year>\d{4})["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<month>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<day>\d{2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<year>\d{4})["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<month>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<day>\d{2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # find Showname.00.00.0000.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<day>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<month>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<year>\d{4})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<day>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<month>\d{2})["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<year>\d{4})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # find Showname.0x00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<season>\d+)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*[Xx]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>\d+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<season>\d+)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*[Xx]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>\d+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # Find Showname.pt00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[Pp][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>\d{1,2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[Pp][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Pp][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>\d{1,2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Pp][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # Find Showname.part00.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[Pp][Aa][Rr][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>\d{1,2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[Pp][Aa][Rr][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Pp][Aa][Rr][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>\d{1,2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[Pp][Aa][Rr][Tt]["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]*(?P<episode>[CcLlXxVvIi]+)(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
 
         # find Showname.000.Meta
-        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+(?P<season>\d)(?P<episode>\d{2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+.*)?$", re.UNICODE),
+        re.compile(ur"(?P<title>.+?)["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+(?P<season>\d)(?P<episode>\d{2})(?P<metaData>["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+.*)?$", re.UNICODE),
     ]
 
     parsingOrderMultiple = [
 
         # Find Showname.S00.E00.S00.E00.Meta
-        re.compile(ur"["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[sS]\d+["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[eE](\d+)+", re.UNICODE),
+        re.compile(ur"["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[sS]\d+["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[eE](\d+)+", re.UNICODE),
 
         # Find Showname.S00.E00.E00.E00.Meta
-        re.compile(ur"["+SeparatorCharacters.SeparatorCharactersRegexStr+"]+[eE](\d+)+", re.UNICODE),
+        re.compile(ur"["+SeparatorCharacters.SeparatorCharactersRegexStr+ur"]+[eE](\d+)+", re.UNICODE),
 
     ]
 
@@ -86,7 +86,7 @@ def parseTitle(title):
         parsedData = rule.match(title)
 
         # Check if any matches were found
-        if parsedData and parsedData.group('title') not in ['',None]:
+        if parsedData and parsedData.group('title') not in ['', None]:
             break
 
     # Check if any pattern matches were found, if not return None
@@ -117,7 +117,7 @@ def parseTitle(title):
 
     if "title" in parsedData.groupdict():
         videoProperties["title"] = parsedData.group("title").strip(SeparatorCharacters.SeparatorCharactersStr+SeparatorCharacters.SeparatorSpecialCharactersStr)
-        videoProperties["title"] = SeparatorCharacters.SeparatorCharactersRegexCompiled.sub(" ",videoProperties["title"])
+        videoProperties["title"] = SeparatorCharacters.SeparatorCharactersRegexCompiled.sub(" ", videoProperties["title"])
 
         # Change amperstands to and
         videoProperties["title"] = videoProperties["title"].replace(u" & ", u" and ")
@@ -126,16 +126,16 @@ def parseTitle(title):
         videoProperties["title"] = videoProperties["title"].strip()
 
         # String year in quotes from end of title
-        videoProperties["title"] = re.sub(r"(.+) \([\d]+\)$",r"\1",videoProperties["title"])
+        videoProperties["title"] = re.sub(r"(.+) \([\d]+\)$", r"\1", videoProperties["title"])
 
         # Strip out some characters that can cause problems matching, this is due to scene naming
-        for ch in [u'(',u')',u'[',u']']:
+        for ch in [u'(', u')', u'[', u']']:
             if ch in videoProperties["title"]:
                 videoProperties["title"] = videoProperties["title"].replace(ch, u'')
 
     if "episode" in parsedData.groupdict():
         if multiData: # if there is multiple episodes then collapse them into a single csv
-            videoProperties["episode"] = ",".join(multiData)
+            videoProperties["episode"] = u",".join(multiData)
         else:
             videoProperties["episode"] = parsedData.group("episode").strip(SeparatorCharacters.SeparatorCharactersStr+SeparatorCharacters.SeparatorSpecialCharactersStr).lstrip("0")
 
