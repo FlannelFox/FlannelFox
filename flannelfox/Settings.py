@@ -336,26 +336,28 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
 
                         majorFeedFilters = artistsList.get("filters", [])
 
-                        # Loop through each show and append a filter for it
-                        for artist in artists:
+                        for filterItem in majorFeedFilters:
+                        
+                            # Loop through each show and append a filter for it
+                            for artist in artists:
 
-                            ruleList = []
+                                ruleList = []
 
-                            # Clean the artist name
-                            artist = artist.lower().strip().replace(u" & ", u" and ")
+                                # Clean the artist name
+                                artist = artist.lower().strip().replace(u" & ", u" and ")
 
-                            ruleList.append({u"key":"artist", u"val":artist, u"exclude":False})
+                                ruleList.append({u"key":"artist", u"val":artist, u"exclude":False})
 
-                            # Load the excludes
-                            for exclude in majorFeedFilters.get("exclude", []):
-                                key, val = exclude.items()[0]
-                                ruleList.append({u"key":key, u"val":val, u"exclude":True})
+                                # Load the excludes
+                                for exclude in filterItem.get("exclude", []):
+                                    key, val = exclude.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":True})
 
-                            for include in majorFeedFilters.get("include", []):
-                                key, val = include.items()[0]
-                                ruleList.append({u"key":key, u"val":val, u"exclude":False})
+                                for include in filterItem.get("include", []):
+                                    key, val = include.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":False})
 
-                            feedFilterList.append(ruleList)
+                                feedFilterList.append(ruleList)
 
                     except Exception as e:
                         logger.info("The feedFilters contains an invalid rule:\n{0}".format(e))
@@ -527,53 +529,55 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
                         majorFeedFilters = trakt_list.get("filters", [])
 
-                        # Loop through each show and append a filter for it
-                        for item in trakt_list_results:
-                            ruleList = []
+                        for filterItem in majorFeedFilters:
 
-                            if trakt_list.get("like", False):
-                                title_match_method = u"titleLike"
-                            else:
-                                title_match_method = u"title"
+                            # Loop through each show and append a filter for it
+                            for item in trakt_list_results:
+                                ruleList = []
 
-                            # Make sure we have some shows to fetch
-                            # TODO: make this use the type field in the json file to determine if it should be show or movie
-                            if "show" not in item and feedType == "tv":
-                                # This happens if you select the wrong type of media tv/movie
-                                continue;
-                            elif "movie" not in item and feedType == "movie":
-                                # This happens if you select the wrong type of media tv/movie
-                                continue;
+                                if trakt_list.get("like", False):
+                                    title_match_method = u"titleLike"
+                                else:
+                                    title_match_method = u"title"
 
-                            elif "show" in item and feedType == "tv":
-                                item = item["show"]
-                                title = item["title"].lower().strip().replace(u" & ", u" and ")
+                                # Make sure we have some shows to fetch
+                                # TODO: make this use the type field in the json file to determine if it should be show or movie
+                                if "show" not in item and feedType == "tv":
+                                    # This happens if you select the wrong type of media tv/movie
+                                    continue;
+                                elif "movie" not in item and feedType == "movie":
+                                    # This happens if you select the wrong type of media tv/movie
+                                    continue;
 
-                            elif "movie" in item and feedType == "movie":
-                                item = item["movie"]
-                                title = item["title"].lower().strip().replace(u" & ", u" and ")
-                                year = item["year"]
+                                elif "show" in item and feedType == "tv":
+                                    item = item["show"]
+                                    title = item["title"].lower().strip().replace(u" & ", u" and ")
 
-                            else:
-                                continue
+                                elif "movie" in item and feedType == "movie":
+                                    item = item["movie"]
+                                    title = item["title"].lower().strip().replace(u" & ", u" and ")
+                                    year = item["year"]
 
-
-                            ruleList.append({u"key":title_match_method, u"val":title, u"exclude":False})
-                            
-                            if year is not None:
-                                ruleList.append({u"key":"year", u"val":year, u"exclude":False})
-
-                            # Load the excludes
-                            for exclude in majorFeedFilters.get("exclude", []):
-                                key, val = exclude.items()[0]
-                                ruleList.append({u"key":key, u"val":val, u"exclude":True})
-
-                            for include in majorFeedFilters.get("include", []):
-                                key, val = include.items()[0]
-                                ruleList.append({u"key":key, u"val":val, u"exclude":False})
+                                else:
+                                    continue
 
 
-                            feedFilterList.append(ruleList)
+                                ruleList.append({u"key":title_match_method, u"val":title, u"exclude":False})
+                                
+                                if year is not None:
+                                    ruleList.append({u"key":"year", u"val":year, u"exclude":False})
+
+                                # Load the excludes
+                                for exclude in filterItem.get("exclude", []):
+                                    key, val = exclude.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":True})
+
+                                for include in filterItem.get("include", []):
+                                    key, val = include.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":False})
+
+
+                                feedFilterList.append(ruleList)
 
                     except Exception as e:
                         logger.info("The feedFilters contains an invalid rule:\n{0}".format(e))
@@ -701,16 +705,16 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                         feedFilters = rss_list.get("filters", [])
 
                         # Loop through each show and append a filter for it
-                        for filter in feedFilters:
+                        for filterItem in feedFilters:
 
                             ruleList = []
 
                             # Load the excludes
-                            for exclude in filter.get("exclude", []):
+                            for exclude in filterItem.get("exclude", []):
                                 key, val = exclude.items()[0]
                                 ruleList.append({u"key":key, u"val":val, u"exclude":True})
 
-                            for include in filter.get("include", []):
+                            for include in filterItem.get("include", []):
                                 key, val = include.items()[0]
                                 ruleList.append({u"key":key, u"val":val, u"exclude":False})
 
