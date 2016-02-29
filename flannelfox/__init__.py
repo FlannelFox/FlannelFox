@@ -84,7 +84,7 @@ settings = {
         "user": "",
         "password": ""
     },
-    "debugLevel": "error",
+    "debugLevel": "info",
     "minimumFreeSpace": 0,
     "maxUsedSpace": 600,
     "queueDaemonThreadSleep": 60,
