@@ -154,7 +154,7 @@ def __rssThread(majorFeed):
             # Read URL
             rssData, httpCode, encoding = __readRSSFeed(minorFeed["url"])
 
-            logger.info(u"Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
+            logger.debug(u"Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
 
             # If we did not get any data or there was an error then skip to the next feed
             if rssData is None or httpCode != 200:
@@ -229,7 +229,7 @@ def rssReader():
 
 
             # Try to get the rssFeeds and return the resutls
-            logger.info(u'Appending items to the queue')
+            logger.debug(u'Appending items to the queue')
             
             try:
                 
