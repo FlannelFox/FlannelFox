@@ -24,16 +24,12 @@ import Trackers
 from flannelfox import Settings
 from Torrent import Status as TorrentStatus
 from Torrent import Torrent
-from flannelfox.databases import Databases
 
 # Setup the logging agent
 from flannelfox import logging
-logger = logging.getLogger(__name__)
 
 TRANSMISSION_MAX_RETRIES = 3
 
-# Setup the database object
-TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 class Responses(object):
     success = u'success'
@@ -48,25 +44,43 @@ class Responses(object):
 
 class Client(object):
 
-    def __init__(self, host=u"localhost", port=u"9091", user=None, password=None, rpcLocation=None, https=False):
+    def __init__(self, settings={}, host=u"localhost", port=u"9091", user=None, password=None, rpcLocation=None, https=False):
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("TransmissionClient INIT")
+        self.logger.debug("TransmissionClient Settings: {0}".format(settings))
 
         self.elements = {}
-        self.elements["host"] = host
-        self.elements["port"] = port
-        self.elements["user"] = user
-        self.elements["password"] = password
-        self.elements["rpcLocation"] = rpcLocation.lstrip('/')
-        self.elements["sessionId"] = None
         self.elements["queue"] = []
+        self.elements["sessionId"] = None
+
+        if settings != {}:
+            self.elements.update(settings)
+        else:
+            self.elements["host"] = host
+            self.elements["port"] = port
+            self.elements["user"] = user
+            self.elements["password"] = password
+            self.elements["rpcLocation"] = rpcLocation
+            self.elements["https"] = https
+
+
+        self.logger.debug("TransmissionClient Settings 2: {0}".format(self.elements))
+
+        # Strip off the leading slash if it exists
+        self.elements["rpcLocation"] = self.elements["rpcLocation"].lstrip('/')
+
+        # tag generator the keep transmisison calls matched
         self.tagGenerator = self.__generateTag()
 
         # Build the server URI
         self.elements["uri"] = u"http"
 
-        if https:
+        if self.elements["https"]:
             self.elements["uri"] += u"s"
 
-        self.elements["uri"] += u"://{0}:{1}".format(host,port)
+        self.elements["uri"] += u"://{0}:{1}".format(self.elements['host'],self.elements['port'])
+        self.logger.debug("TransmissionClient URL: {0}".format(self.elements['uri']))
 
             
     def __transmissionInit(self, action=u'restart'):
@@ -126,7 +140,7 @@ class Client(object):
         else:
             uri = "{0}/{1}".format(self.elements["uri"],self.elements["rpcLocation"])
 
-        logger.debug("Trying to communicate with the Transmission Server")
+        self.logger.debug("Trying to communicate with the Transmission Server")
         try:
             # Connect to the RPC server
             if postData is None:
@@ -148,13 +162,13 @@ class Client(object):
             # make the request again
             if httpCode == 409:
                 self.elements["sessionId"] = r.headers.get("X-Transmission-Session-Id")
-                logger.debug("X-Transmission-Session-Id Error")
+                self.logger.debug("X-Transmission-Session-Id Error")
 
                 response, httpCode, encoding = self.__sendRequest(queryString,postData)
 
-            logger.debug("Transmission call completed")
+            self.logger.debug("Transmission call completed")
         except Exception as e:
-            logger.debug("There was a problem communicating with Transmission:\n{0}".format(e))
+            self.logger.debug("There was a problem communicating with Transmission:\n{0}".format(e))
             try:
                 httpCode = e.code
             except (AttributeError):
@@ -219,7 +233,7 @@ class Client(object):
             if isinstance(response,dict) and "result" in response:
                 transmissionResponseCode = unicode(response["result"])
 
-        return (response,httpResponseCode,transmissionResponseCode)
+        return (response, httpResponseCode, transmissionResponseCode)
 
 
     def __getTorrents(self,fields=[u"hashString",u"id",u"error",u"errorString",u"uploadRatio",u"percentDone",u"doneDate",u"activityDate",u"rateUpload",u"status",u"downloadDir",u'trackerStats']):
@@ -264,20 +278,6 @@ class Client(object):
         return (torrents,httpResponseCode,transmissionResponseCode)
 
 
-    def __updateHashString(self, using=None, update=None):
-        '''
-        Updated the hash string for a torrent in the database
-
-        Takes:
-            using - A list of database properties that are used to identify the
-                torrent to be updated
-
-            update - Field to update in the database
-        '''
-        TorrentDB.updateHashString(update=update, using=using)
-
-
-
     def updateQueue(self):
         '''
         Updates the class variable queue with the latest torrent queue info
@@ -314,7 +314,7 @@ class Client(object):
                             
                             if tracker['lastAnnounceResult'] != '' and tracker['lastAnnounceResult'] != None:
                                 workingTrackerExists = True
-                                logger.debug('Rewriting errorString: {0}'.format(tracker['lastAnnounceResult']))
+                                self.logger.debug('Rewriting errorString: {0}'.format(tracker['lastAnnounceResult']))
                                 torrent['errorString'] = tracker['lastAnnounceResult']
 
                             elif tracker['lastAnnounceSucceeded']:
@@ -329,7 +329,7 @@ class Client(object):
                 # Check for torrents that should be removed
                 for error in Trackers.Responses.Remove:
                     if error in torrent['errorString']:
-                        logger.debug('Removing torrent do to errorString: {0}'.format(torrent['errorString']))
+                        self.logger.debug('Removing torrent do to errorString: {0}'.format(torrent['errorString']))
                         self.removeBadTorrent(hashString=torrent['hashString'], reason=torrent['errorString'])
                         continue
 
@@ -345,10 +345,10 @@ class Client(object):
                         self.StartTorrent(hashString=torrent["hashString"])
                         continue
 
-                    logger.debug("Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"]))
+                    self.logger.debug("Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"]))
 
                 elif torrent["errorString"] != u'':
-                    logger.debug("Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"]))
+                    self.logger.debug("Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"]))
 
 
                 t = Torrent(hashString=torrent["hashString"],
@@ -366,7 +366,7 @@ class Client(object):
 
                 self.elements["queue"].append(t)
 
-        return (transmissionResponseCode,httpResponseCode)
+        return (transmissionResponseCode, httpResponseCode)
 
 
     def getQueue(self):
@@ -417,11 +417,11 @@ class Client(object):
 
         if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Verification Succeeded")
+                self.logger.debug("Verification Succeeded")
             return True
         else:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Verification Failed")
+                self.logger.debug("Verification Failed")
 
             return False
 
@@ -461,11 +461,11 @@ class Client(object):
 
         if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Stop Succeeded")
+                self.logger.debug("Stop Succeeded")
             return True
         else:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Stop Failed")
+                self.logger.debug("Stop Failed")
 
             return False
 
@@ -505,16 +505,16 @@ class Client(object):
 
         if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Start Succeeded")
+                self.logger.debug("Start Succeeded")
             return True
         else:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Start Failed")
+                self.logger.debug("Start Failed")
 
             return False
 
 
-    def removeBadTorrent(self,hashString=None,reason='No Reason Given'):
+    def removeBadTorrent(self, hashString=None, reason='No Reason Given'):
         '''
         Removes a torrent from both transmission and the database
         this should be called when there is a bad torrent.
@@ -524,37 +524,11 @@ class Client(object):
         '''
 
         # Remove the torrent from the client
-        self.removeTorrent(hashString=hashString,deleteData=True,reason=reason)
+        self.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
-        # Remove the torrent from the DB
-        TorrentDB.deleteTorrent(hashString=hashString,reason=reason)
 
-    def removeDupeTorrent(self, hashString=None, url=None):
-        '''
-        Removes a duplicate torrent from transmission if it does not exist
-        and is in the database but does in transmission. This is checked via
-        the url and the bashString. TODO: Handle hash collision
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
-            url - Url of the torrent we are adding
-        '''
-
-        if not TorrentDB.torrentExists(hashString=hashString, url=url):
-
-            # Remove the torrent from the client
-            self.removeTorrent(hashString=hashString,deleteData=False, reason='Duplicate Torrent')
-
-            return True
-        else:
-            # Remove the torrent from the DB
-            # TODO: Perhaps this should be changed to just mark the torrent as added
-            #       or blacklisted
-            TorrentDB.deleteTorrent(url=url, reason='Duplicate Torrent')
-
-            return True
-
-    def removeTorrent(self,hashString=None,deleteData=False,reason='No Reason Given'):
+    def removeTorrent(self, hashString=None, deleteData=False, reason='No Reason Given'):
         '''
         Removes a torrent from transmission
 
@@ -597,41 +571,23 @@ class Client(object):
 
 
         if deleteData:
-            logger.debug('Torrent deleted from client: {0}'.format(reason))
+            self.logger.debug('Torrent deleted from client: {0}'.format(reason))
         else:
-           logger.debug('Torrent Removed from client: {0}'.format(reason))
+           self.logger.debug('Torrent Removed from client: {0}'.format(reason))
 
         if transmissionResponseCode == Responses.success:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Torrent Removal Succeeded")
+                self.logger.debug("Torrent Removal Succeeded")
             return True
         else:
             if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                logger.debug("Torrent Removal Failed")
+                self.logger.debug("Torrent Removal Failed")
 
             return False
 
 
-    def deleteTorrent(self,hashString=None,reason='No Reason Given'):
-        '''
-        Removes a torrent from transmission and deletes the associated data
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
-
-            TODO: if hashString is not specified then we should remove the torrent
-            that has the longest time since active.
-
-        Returns:
-            bool True is action completed
-        '''
-
-        # Logging is skipped here and put into the removeTorrent function to prevent
-        # duplicate logging
-        return self.removeTorrent(hashString=hashString,deleteData=True, reason=reason)
-
-
-    def removeExtraTrackers(self,hashString=None):
+    def removeExtraTrackers(self, hashString=None):
         '''
         Attempts to remove extra trackers from torrents that can cause automation issues.
         '''
@@ -653,7 +609,7 @@ class Client(object):
         # Tag (not strictly needed)
         commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
 
-        logger.debug("Trying to remove extra trackers")
+        self.logger.debug("Trying to remove extra trackers")
         while (True):
 
         # Remove a tracker
@@ -664,7 +620,7 @@ class Client(object):
             if transmissionResponseCode == Responses.invalid_argument:
                 break
 
-            logger.debug("Tracker removed")
+            self.logger.debug("Tracker removed")
             
             # Wait 3 seconds before removing the next tracker
             time.sleep(5)
@@ -672,7 +628,7 @@ class Client(object):
         return True
 
 
-    def addTorrentURL(self,url=None,destination=flannelfox.settings['files']['defaultTorrentLocation']):
+    def addTorrentURL(self, url=None, destination=flannelfox.settings['files']['defaultTorrentLocation']):
         '''
         Attempts to load the torrent at the given url into transmission
 
@@ -684,12 +640,12 @@ class Client(object):
         Returns:
             bool True is action completed successfully
         '''
-
+        self.logger.debug("TransmissionClient adding torrent")
         # Make sure a URL was passed
         if url is None:
             raise ValueError(u"A url must be provided to add a torrent")
 
-        logger.debug("Trying to add a new torrent:\n{0}".format(url))
+        self.logger.debug("Trying to add a new torrent:\n{0}".format(url))
 
         # Method
         commandJson = u'{"method":"torrent-add",'
@@ -720,46 +676,29 @@ class Client(object):
                 # Duplicate Torrent
                 duplicateTorrent = response["arguments"]["torrent-duplicate"]
 
-                # Torrent is broken so lets delete it from the DB, this leaves the opportunity
-                # for the torrent to later be added again
-                self.removeDupeTorrent(url=url, hashString=duplicateTorrent["hashString"])
-
-                logger.debug("Duplicate torrent encountered: {0}".format(response["arguments"]))
-
-                return False
+                return (1, duplicateTorrent["hashString"])
 
         # Get Added Torrents
         if isinstance(response,dict) and "arguments" in response:
             if isinstance(response["arguments"],dict) and "torrent-added" in response["arguments"]:
+                
                 torrentAdded = response["arguments"]["torrent-added"]
 
-                # Get Current Time
-                sinceEpoch = int(time.time())
-
-                # update hash, addedOn, added in DB
-                self.__updateHashString(using={u"url":url}, update={u"hashString":torrentAdded["hashString"],u"addedOn":sinceEpoch,u"added":1})
-
-                logger.debug("Torrent Added: {0}".format(transmissionResponseCode))
+                self.logger.debug("Torrent Added: {0}".format(transmissionResponseCode))
 
 
         if transmissionResponseCode == Responses.success:
             # TODO: Remove extra trackers, this is needed due to a bug in
             # transmission that prevents non-communication related errors
             # from being seen when there is a back tracker.
-            pass
-            ###self.removeExtraTrackers(hashString=torrentAdded["hashString"])
-
-            ###time.sleep(10)
-            ###return True
+            return (0, torrentAdded["hashString"])
 
         else:
             # Here we need to handle any special errors encountered when
             # trying to add a torrent
 
-            logger.debug("Torrent Add Failed: {0}".format(transmissionResponseCode))
+            self.logger.debug("Torrent Add Failed: {0}".format(transmissionResponseCode))
 
-            # Get Current Time
-            sinceEpoch = int(time.time())
 
             if (transmissionResponseCode in [
                         Responses.bad_torrent,
@@ -771,17 +710,17 @@ class Client(object):
                 ):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
                 # for the torrent to later be added again
-                TorrentDB.deleteTorrent(url=url, reason=transmissionResponseCode)
+                self.logger.debug("Torrent failed, but we can retry")
+                return (2, transmissionResponseCode)
+
 
             if (transmissionResponseCode in [
                         Responses.bad_torrent,
                         Responses.torrent_not_found
                     ]
                 ):
-                TorrentDB.addBlacklistedTorrent(url=url, reason=transmissionResponseCode)
-
-            time.sleep(10)
-            return False
+                self.logger.debug("Torrent is bad, so let's blacklist it")
+                return (3, transmissionResponseCode)
 
             
     def getSlowestSeeds(self,num=None):
@@ -849,6 +788,7 @@ class Client(object):
         if downloadingTorrents is None or len(downloadingTorrents) <= num:
             return downloadingTorrents
         return downloadingTorrents[:num]
+
 
 
     def getSeeding(self,num=None):

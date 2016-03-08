@@ -28,15 +28,14 @@ from flannelfox.databases import Databases
 
 # Setup the logging agent
 from flannelfox import logging
-logger = logging.getLogger(__name__)
 
-import Transmission
+from flannelfox.torrentclients import Transmission
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 
 
-class Client(object):
+class TorrentClient(object):
     '''
     This should be a generic class that torrent clients can extend from and use as a roadmap
     all the functions in here need to be defined in the client module in order for it to work
@@ -46,25 +45,23 @@ class Client(object):
 
     '''
 
+    def __init__(self, settings={}):
 
-    def __init__(self, host=u"localhost", port=u"9091", user=None, password=None, rpcLocation=None, https=False):
-        self.elements = {}
-        self.elements["queue"] = []
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("TorrentClient INIT")        
 
+        if settings['type'] == "transmission":
+            self.logger.debug("TorrentClient Settings: {0}".format(settings))
+            self.client = Transmission.Client(settings=settings)
+        else:
+            raise ValueError("Torrent client type not defined!")
             
-    def __generateTag(self):
-        '''
-        Generates an int to be used for tag numbers in rpc calls
-        '''
-        while True:
-            for n in xrange(65535):
-                yield n
 
-
-    def updateHashString(self, using=None, update=None):
+    def __updateHashString(self, using=None, update=None):
         '''
-        TODO: this was __updateHansString()
-        Updated the hash string for a torrent in the database
+        TODO: This should be used instead of the function in the Transmission Class
+        
+        Updates the hash string for a torrent in the database
 
         Takes:
             using - A list of database properties that are used to identify the
@@ -75,7 +72,6 @@ class Client(object):
         TorrentDB.updateHashString(update=update, using=using)
 
 
-
     def updateQueue(self):
         '''
         Updates the class variable queue with the latest torrent queue info
@@ -83,7 +79,7 @@ class Client(object):
         Returns:
             Tuple (transmissionResponseCode, httpResponseCode)
         '''
-        pass
+        return self.client.updateQueue()
 
 
     def getQueue(self):
@@ -91,7 +87,7 @@ class Client(object):
         Returns:
             List [torrents]
         '''
-        return self.elements["queue"]
+        return self.client.getQueue()
 
 
     def verifyTorrent(self,hashString=None):
@@ -104,7 +100,7 @@ class Client(object):
         Returns:
             bool True is action completed
         '''
-        pass
+        return self.client.verifyTorrent(hashString=hashString)
 
 
     def StopTorrent(self,hashString=None):
@@ -117,10 +113,10 @@ class Client(object):
         Returns:
             bool True is action completed
         '''
-        pass
+        return self.client.StopTorrent(hashString=hashString)
 
 
-    def StartTorrent(self,hashString=None):
+    def StartTorrent(self, hashString=None):
         '''
         Starts a torrent
 
@@ -130,10 +126,10 @@ class Client(object):
         Returns:
             bool True is action completed
         '''
-        pass
+        return self.client.StopTorrent(hashString=hashString)
 
 
-    def removeBadTorrent(self,hashString=None,reason='No Reason Given'):
+    def removeBadTorrent(self, hashString=None, reason='No Reason Given'):
         '''
         Removes a torrent from both transmission and the database
         this should be called when there is a bad torrent.
@@ -143,10 +139,10 @@ class Client(object):
         '''
 
         # Remove the torrent from the client
-        self.removeTorrent(hashString=hashString,deleteData=True,reason=reason)
+        self.client.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
         # Remove the torrent from the DB
-        TorrentDB.deleteTorrent(hashString=hashString,reason=reason)
+        TorrentDB.deleteTorrent(hashString=hashString, reason=reason)
 
 
     def removeDupeTorrent(self, hashString=None, url=None):
@@ -163,7 +159,7 @@ class Client(object):
         if not TorrentDB.torrentExists(hashString=hashString, url=url):
 
             # Remove the torrent from the client
-            self.removeTorrent(hashString=hashString,deleteData=False, reason='Duplicate Torrent')
+            self.removeTorrent(hashString=hashString, deleteData=False, reason='Duplicate Torrent')
 
             return True
         else:
@@ -174,7 +170,7 @@ class Client(object):
 
             return True
 
-    def removeTorrent(self,hashString=None,deleteData=False,reason='No Reason Given'):
+    def removeTorrent(self, hashString=None, deleteData=False, reason='No Reason Given'):
         '''
         Removes a torrent from transmission
 
@@ -189,10 +185,10 @@ class Client(object):
         Returns:
             bool True is action completed
         '''
-        pass
+        return self.client.removeTorrent(hashString=hashString, deleteData=deleteData, reason=reason)
 
 
-    def deleteTorrent(self,hashString=None,reason='No Reason Given'):
+    def deleteTorrent(self, hashString=None, reason='No Reason Given'):
         '''
         Removes a torrent from transmission and deletes the associated data
 
@@ -208,10 +204,10 @@ class Client(object):
 
         # Logging is skipped here and put into the removeTorrent function to prevent
         # duplicate logging
-        return self.removeTorrent(hashString=hashString,deleteData=True, reason=reason)
+        return self.client.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
 
-    def addTorrentURL(self,url=None,destination=flannelfox.settings['files']['defaultTorrentLocation']):
+    def addTorrentURL(self, url=None, destination=flannelfox.settings['files']['defaultTorrentLocation']):
         '''
         Attempts to load the torrent at the given url into transmission
 
@@ -223,45 +219,79 @@ class Client(object):
         Returns:
             bool True is action completed successfully
         '''
-        pass
+        self.logger.debug("TorrentClient adding torrent")
+        result, response = self.client.addTorrentURL(url=url, destination=destination)
+
+        self.logger.debug("TorrentClient responded with ({0}, {1})".format(result, response))
+
+        if result == 0:
+
+            # Get Current Time
+            sinceEpoch = int(time.time())
+
+            # update hash, addedOn, added in DB
+            self.__updateHashString(using={u"url":url}, update={u"hashString":response, u"addedOn":sinceEpoch, u"added":1})
+
+            time.sleep(10)
+
+            return True
+
+        elif result == 1:
+            # Torrent is broken so lets delete it from the DB, this leaves the opportunity
+            # for the torrent to later be added again
+            self.removeDupeTorrent(url=url, hashString=response)
+
+            time.sleep(10)
+
+            return False
+
+        elif result == 2:
+            TorrentDB.deleteTorrent(url=url, reason=response)
+
+            return False
+
+        elif result == 3:
+            TorrentDB.addBlacklistedTorrent(url=url, reason=response)
+
+            return False
 
 
-    def getSlowestSeeds(self,num=None):
+    def getSlowestSeeds(self, num=None):
         '''
         Look for the slowest seeding torrents, slowest first
 
         Takes:
             num - Int, the number of torrent objects to return
         '''
-        pass
+        return self.client.getSlowestSeeds(num=num)
 
 
-    def getDormantSeeds(self,num=None):
+    def getDormantSeeds(self, num=None):
         '''
         Looks for a seeding torrent with the longest time since active, returns
         torrents, oldest first
         '''
-        pass
+        return self.client.getDormantSeeds(num=num)
 
 
-    def getDownloading(self,num=None):
+    def getDownloading(self, num=None):
         '''
         Returns a list of torrents that are downloading
 
         Takes:
             num - Int, the number of torrents to return
         '''
-        pass
+        return self.client.getDownloading(num=num)
 
 
-    def getSeeding(self,num=None):
+    def getSeeding(self, num=None):
         '''
         Returns a list of torrents that are Seeding
 
         Takes:
             num - Int, the number of torrents to return
         '''
-        pass
+        return self.client.getSeeding(num=num)
 
         
     def getFinishedSeeding(self, num=None):
@@ -271,16 +301,16 @@ class Client(object):
         Takes:
             num - Int, the number of torrents to return
         '''
-        pass
+        return self.client.getFinishedSeeding(num=num)
 
             
     def restart(self):
-        pass
+        return self.client.restart()
 
         
     def start(self):
-        pass
+        return self.client.start()
 
         
     def stop(self):
-        pass
+        return self.client.stop()

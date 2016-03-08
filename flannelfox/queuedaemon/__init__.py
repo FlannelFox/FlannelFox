@@ -16,13 +16,17 @@ from time import gmtime, strftime
 import daemon
 
 import flannelfox
+
 # FreeSpace Calculator
 from flannelfox.ostools import FreeSpace
 from flannelfox.ostools import UsedSpace
+
+# Logging
 from flannelfox import logging
+
 # Transmission Includes
-from flannelfox.torrentclients import Transmission
 from flannelfox.databases import Databases
+from flannelfox.torrentclients import TorrentClient
 
 # Setup the database object
 TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
@@ -62,17 +66,13 @@ def queueReader():
         logger.warning('No client was configured to monitor!')
         return
 
-
-
-    if flannelfox.settings['client']['type'] == "transmission":
-
-        torrentClient = Transmission.Client(host=flannelfox.settings['client']['host'],
-                                                port=flannelfox.settings['client']['port'],
-                                                user=flannelfox.settings['client']['user'],
-                                                password=flannelfox.settings['client']['password'],
-                                                rpcLocation=flannelfox.settings['client']['rpcLocation'],
-                                                https=flannelfox.settings['client']['https']
-        )
+    # Try to create a torrent client instance
+    try:
+        if flannelfox.settings['client']['type'] == "transmission":
+            torrentClient = TorrentClient(settings=flannelfox.settings['client'])
+    except Exception as e:
+        logger.error("Could not create torrent client: {0}".format(e))
+        return
 
     if torrentClient == None:
         logger.error('No client was configured to monitor!')
@@ -86,7 +86,7 @@ def queueReader():
         # ["hashString","id","error","errorString","uploadRatio","percentDone","doneDate","activityDate","rateUpload","downloadDir"]
 
         # Get the initial queue listing
-        transmissionResponseCode,httpResponseCode = torrentClient.updateQueue()
+        transmissionResponseCode, httpResponseCode = torrentClient.updateQueue()
 
 
 
