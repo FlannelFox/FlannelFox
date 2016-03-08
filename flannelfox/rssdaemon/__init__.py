@@ -252,14 +252,17 @@ def rssReader():
         logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
 
         # Write matching filters to database
+        logger.debug("Writing Torrents to DB")
         rssTorrents.writeToDB()
 
         # Garbage collection
+        logger.debug("Garbage Collection")
         majorFeeds = rssTorrents = results = result = rssPool = None
 
         #Settings.showHeap()
 
         # Put the app to sleep
+        logger.debug("Sleep for a bit")
         time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
 
 
@@ -274,14 +277,19 @@ def main():
             logging.getFileHandle(__name__).stream
         ]
     ):
-        try:
-            rssReader()
 
-        except KeyboardInterrupt as e:
-            logger.error(u"Application Aborted")
+        while True:
+            try:
+                rssReader()
 
-        finally:
-            logger.info(u"Application Exited")
+            except KeyboardInterrupt as e:
+                logger.error(u"Application Aborted")
+                break
+
+            except Exception as e:
+                logger.error(u"Application Stopped {0}".format(e))
+
+    logger.info(u"Application Exited")
 
         
 if __name__ == '__main__':

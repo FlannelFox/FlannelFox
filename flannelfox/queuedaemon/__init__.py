@@ -279,14 +279,24 @@ def main():
             logging.getFileHandle(__name__).stream
         ]
     ):
-        try:
-            queueReader()
+        while True:
+        
+            try:
+                queueReader()
 
-        except KeyboardInterrupt as e:
-            logger.warning("Application Aborted")
+            except KeyboardInterrupt as e:
+                logger.warning("Application Aborted")
+                break
 
-        finally:
-            logger.info("Application Exited")
+            except Exception as e:
+                logger.error(u"Application Stopped {0}".format(e))
+                
+                # Sleep for 10 seconds to give a bit of time for the error to try and resolve itself
+                # This is mainly related to the occurance of an error that can be generated randomly
+                #   [Errno 11] Resource temporarily unavailable
+                time.sleep(10)
+
+    logger.info("Application Exited")
 
 
 if __name__ == '__main__':
