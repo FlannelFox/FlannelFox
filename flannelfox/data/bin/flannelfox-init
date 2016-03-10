@@ -82,8 +82,30 @@ case "$1" in
     $0 compress
     $0 start
     ;;
+  upgrade-dev)
+    $0 stop
+    cd "$SCRIPTPATH"
+    tar -czvf flannelfox-update-$(date +%Y%m%d%H%M%S).tar.gz ~/.flannelfox
+    wget 'https://github.com/FlannelFox/FlannelFox/archive/development.zip' -O flannelfox.zip
+    unzip -o flannelfox.zip
+    cd ~/Flannel*
+    python setup.py install
+    cd "$SCRIPTPATH"
+    $0 start
+    ;;
+  upgrade)
+    $0 stop
+    cd "$SCRIPTPATH"
+    tar -czvf flannelfox-update-$(date +%Y%m%d%H%M%S).tar.gz ~/.flannelfox
+    wget 'https://github.com/FlannelFox/FlannelFox/archive/master.zip' -O flannelfox.zip
+    unzip -o flannelfox.zip
+    cd ~/Flannel*
+    python setup.py install
+    cd "$SCRIPTPATH"
+    $0 start
+    ;;
   *)
-    echo "Usage: flannelfox-init {start|stop|starthttp|startqueue|stophttp|stopqueue|startrss|stoprss|heartbeat|restart}"
+    echo "Usage: flannelfox-init {start|stop|starthttp|startqueue|stophttp|stopqueue|startrss|stoprss|restart|upgrade}"
     exit 1
     ;;
 esac
