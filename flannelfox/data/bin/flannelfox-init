@@ -88,7 +88,7 @@ case "$1" in
     tar -czvf flannelfox-update-$(date +%Y%m%d%H%M%S).tar.gz ~/.flannelfox
     wget 'https://github.com/FlannelFox/FlannelFox/archive/development.zip' -O flannelfox.zip
     unzip -o flannelfox.zip
-    cd ~/Flannel*
+    cd Flannel*
     python setup.py install
     cd "$SCRIPTPATH"
     $0 start
@@ -99,7 +99,7 @@ case "$1" in
     tar -czvf flannelfox-update-$(date +%Y%m%d%H%M%S).tar.gz ~/.flannelfox
     wget 'https://github.com/FlannelFox/FlannelFox/archive/master.zip' -O flannelfox.zip
     unzip -o flannelfox.zip
-    cd ~/Flannel*
+    cd Flannel*
     python setup.py install
     cd "$SCRIPTPATH"
     $0 start
