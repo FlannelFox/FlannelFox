@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/FlannelFox/FlannelFox.png?label=ready&title=Ready)](https://waffle.io/FlannelFox/FlannelFox)
 FlannelFox is a Python application that can monitor a torrent client and perform regular management tasks such as:
 * Ensuring torrents seed an appropriate amount of time after they complete
 * Ensuring torrents seed to an appropriate ratio after they complete
