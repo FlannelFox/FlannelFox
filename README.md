@@ -1,13 +1,12 @@
-[![Stories in Ready](https://badge.waffle.io/FlannelFox/FlannelFox.png?label=ready&title=Ready)](https://waffle.io/FlannelFox/FlannelFox)
 FlannelFox is a Python application that can monitor a torrent client and perform regular management tasks such as:
 * Ensuring torrents seed an appropriate amount of time after they complete
 * Ensuring torrents seed to an appropriate ratio after they complete
 * Manage how many torrents are running at a time
 * Automatically load torrents from RSS feeds based on user defined filters
 
-[![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox/blob/master/License.md)
-[![Github All Releases](https://img.shields.io/github/downloads/FlannelFox/FlannelFox/total.svg?style=flat-square)](https://github.com/FlannelFox/FlannelFox)
-
+[![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=plastic)](https://github.com/FlannelFox/FlannelFox/blob/master/License.md)
+[![Github All Releases](https://img.shields.io/github/downloads/FlannelFox/FlannelFox/total.svg?style=plastic)](https://github.com/FlannelFox/FlannelFox)
+[![Issues in Ready](https://badge.waffle.io/FlannelFox/FlannelFox.png?label=ready&title=Ready)](https://waffle.io/FlannelFox/FlannelFox)
 
 #What will it download and how does it know what I want?
 FlannelFox uses a set of JSON files (.json) that allow you to let it know what you want in three (3) ways:
