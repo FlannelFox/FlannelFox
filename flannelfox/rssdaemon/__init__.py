@@ -167,6 +167,11 @@ def __rssThread(majorFeed):
             torrents = __rssToTorrents(rssData, feedType=majorFeed["feedType"], feedDestination=majorFeed["feedDestination"],minRatio=minorFeed["minRatio"],comparison=minorFeed["comparison"],minTime=minorFeed["minTime"])
             for torrent in torrents:
 
+                logger.debug("Checking Torrent: ")
+                logger.debug("======================")
+                logger.debug(u"{0}".format(torrent))
+                logger.debug("======================")
+
                 # Check the filters and see if anything should be excluded
                 if torrent.filterMatch(majorFeed["feedFilters"]):
                     rssTorrents.append(torrent)
