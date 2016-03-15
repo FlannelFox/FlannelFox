@@ -381,12 +381,14 @@ This is achieved by leaving the type section empty ""
         "minRatio": "1.5"
       }
     ],
-    "filters": {
-      "include": [
-        {
-          "quality": "720p"
-        }
-      ]
+    "filters": [
+      {
+        "include": [
+          {
+            "quality": "720p"
+          }
+        ]
+      }
     }
   }
 ```
@@ -419,13 +421,15 @@ This is achieved by leaving the type section empty ""
         "minRatio": "1.5"
       }
     ],
-    "filters": {
-      "include": [
-        {
-          "quality": "720p"
-        }
-      ]
-    }
+    "filters": [
+      {
+        "include": [
+          {
+            "quality": "720p"
+          }
+        ]
+      }
+    ]
   }
 ]
 ```
@@ -458,16 +462,18 @@ This is achieved by leaving the type section empty ""
         "minRatio": "1.5"
       }
     ],
-    "filters": {
-      "exclude": [
-        {"wordMatch": "scene"}
-      ],
-      "include": [
-        {"source": "cd"},
-        {"quality": "v0vbr"},
-        {"codec": "mp3"}
-      ]
-    }
+    "filters": [
+      {
+        "exclude": [
+          {"wordMatch": "scene"}
+        ],
+        "include": [
+          {"source": "cd"},
+          {"quality": "v0vbr"},
+          {"codec": "mp3"}
+        ]
+      }
+    ]
   }
 ]
 ```
