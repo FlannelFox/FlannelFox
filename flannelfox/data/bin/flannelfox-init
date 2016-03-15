@@ -91,6 +91,7 @@ case "$1" in
     cd Flannel*
     python setup.py install
     cd "$SCRIPTPATH"
+    rm -fR Flannel*
     $0 start
     ;;
   upgrade)
@@ -102,6 +103,7 @@ case "$1" in
     cd Flannel*
     python setup.py install
     cd "$SCRIPTPATH"
+    rm -fR Flannel*
     $0 start
     ;;
   *)
