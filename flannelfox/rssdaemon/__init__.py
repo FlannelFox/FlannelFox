@@ -135,6 +135,8 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
 
 def __rssThread(majorFeed):
 
+
+    logger.debug("Thread Started")
     # This is needed to ensure Keyboard driven interruptions are handled correctly
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -167,14 +169,18 @@ def __rssThread(majorFeed):
             torrents = __rssToTorrents(rssData, feedType=majorFeed["feedType"], feedDestination=majorFeed["feedDestination"],minRatio=minorFeed["minRatio"],comparison=minorFeed["comparison"],minTime=minorFeed["minTime"])
             for torrent in torrents:
 
-                logger.debug("Checking Torrent: ")
-                logger.debug("======================")
-                logger.debug(u"{0}".format(torrent))
-                logger.debug("======================")
-
                 # Check the filters and see if anything should be excluded
                 if torrent.filterMatch(majorFeed["feedFilters"]):
+                    logger.debug("Matched Torrent: ")
+                    logger.debug("======================")
+                    logger.debug(u"{0}".format(torrent))
+                    logger.debug("======================")
                     rssTorrents.append(torrent)
+                else:
+                    logger.debug("UnMatched Torrent: ")
+                    logger.debug("======================")
+                    logger.debug(u"{0}".format(torrent))
+                    logger.debug("======================")
 
         # Garbage Collection
         minorFeed = rssData = torrents = None
@@ -183,6 +189,7 @@ def __rssThread(majorFeed):
         logger.error(u"Thread ERROR: {0} Exception: {1}".format(minorFeed["url"]),e)
         rssTorrents = []
 
+    logger.debug("Thread Done")
     return rssTorrents
 
 
@@ -198,6 +205,7 @@ def rssReader():
         # Reads the RSSFeedConfig file each loop to ensure new entries are picked up
         # rssFeeds
         majorFeeds = {}
+        results = []
         majorFeeds.update(Settings.readLastfmArtists())
         majorFeeds.update(Settings.readTraktTV())
         majorFeeds.update(Settings.readRSS())
@@ -218,11 +226,17 @@ def rssReader():
 
         # If multiple cores are allowed then for http calls
         else:
+            logger.debug("Pool Created")
             rssPool = Pool(processes=flannelfox.settings['maxRssThreads'])
 
             try:
                 logger.info(u"Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
-                results = [rssPool.apply_async(__rssThread, (f,)) for f in majorFeeds.itervalues()]
+
+
+                for f in majorFeeds.itervalues():
+                    results.append(rssPool.apply_async(__rssThread, (f,)))
+
+                logger.debug("Closing Pool")
                 rssPool.close()
 
             except Exception as e:
@@ -230,6 +244,7 @@ def rssReader():
                 rssPool.terminate()
 
             finally:
+                logger.debug("Joining Pool")
                 rssPool.join()
 
 
@@ -254,7 +269,11 @@ def rssReader():
             except Exception as e:
                 logger.error(u"There was a problem appending data to the queue.\n{0}".format(e))
 
+            rssPool.terminate()
+
         logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
+        
+
 
         # Write matching filters to database
         logger.debug("Writing Torrents to DB")
@@ -285,6 +304,7 @@ def main():
 
         while True:
             try:
+                logger.info("RSSReader Started")
                 rssReader()
 
             except KeyboardInterrupt as e:

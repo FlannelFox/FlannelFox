@@ -22,9 +22,6 @@ from bs4 import BeautifulSoup
 import flannelfox
 from flannelfox import logging
 
-# Setup the logging agent
-logger = logging.getLogger(__name__)
-
 # #############################################################################
 # Special variables to handle formatting names
 # #############################################################################
@@ -112,6 +109,7 @@ FUZZY_PROPERTIES = [
 
 def changeCharset(data, charset="utf-8", type="xml"):
 
+    logger = logging.getLogger(__name__)
     logger.debug("Tyring to convert {0} to {1}".format(charset, type))
 
     if charset is None:
@@ -128,6 +126,7 @@ def changeCharset(data, charset="utf-8", type="xml"):
 
 
 def modification_date(filename):
+    logger = logging.getLogger(__name__)
     try:
         return int(datetime.datetime.fromtimestamp(os.path.getmtime(filename)).strftime("%s"))
     except:
@@ -136,7 +135,7 @@ def modification_date(filename):
 
 
 def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
-
+    logger = logging.getLogger(__name__)
     try:
         # Get the modification time
         lastModified = modification_date(cacheFilename)
@@ -169,6 +168,8 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
     frequency: how often to update the file in minutes
     '''
 
+    logger = logging.getLogger(__name__)
+
     try:
         if isCacheUpdateNeeded(cacheFilename=cacheFilename, frequency=frequency):
             logger.info("Cache update for {0} needed".format(cacheFilename))
@@ -183,6 +184,7 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
 
 
 def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir']):
+    logger = logging.getLogger(__name__)
     majorFeeds = {}
 
     try:
@@ -386,6 +388,9 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
     trakt-api-key:XXXX
     '''
 
+    logger = logging.getLogger(__name__)
+    logger.info("Reading TraktTV Feed")
+
     majorFeeds = {}
     TRAKT_TV_LISTS = []
 
@@ -585,7 +590,6 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
                     # Append the Config item to the dict
                     majorFeeds[configFile+'.'+feedName] = {u"feedName":feedName,u"feedType":feedType,u"feedDestination":feedDestination,u"minorFeeds":minorFeeds,u"feedFilters":feedFilterList}
-
                 #f = open("feeds_new.json", 'w')
                 #json.dump(majorFeeds, f)
             except Exception as e:
@@ -594,7 +598,11 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
     except Exception as e:
         # This should only happen if there was an issue getting files names from the directory
         pass
-
+    logger.debug("=================")
+    logger.debug("TraktMajorFilters")
+    logger.debug("=================")
+    logger.debug(majorFeeds)
+    logger.debug("=================")
     return majorFeeds
 
 
@@ -612,13 +620,18 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
 
     TODO: Convert this feed from XML to JSON
     '''
+    logger = logging.getLogger(__name__)
 
     majorFeeds = {}
     RSS_LISTS = []
 
+    configFiles = os.listdir(configFolder)
+
+    logger.debug("Reading Count: {0} feeds".format(len(configFiles)))
+
     try:
 
-        for configFile in os.listdir(configFolder):
+        for configFile in configFiles:
             
             # Skip non-json files
             if not configFile.endswith('.json'):
