@@ -2,7 +2,7 @@ import os.path as osPath
 import sys
 from setuptools import setup, find_packages
 setup(name = 'flannelfox',
-      version = '1.1.2',
+      version = '1.1.4',
       packages = find_packages(),
       package_data={'flannelfox': ['flannelfox/data/*']},
       data_files = [
