@@ -66,7 +66,8 @@ def __readRSSFeed(url):
         logger.debug(u"RSS fetch OK URL: [{0}]|[{1}]".format(httpRegex.match(url).group(1), r.status_code))
 
     except Exception as e:
-        logger.error(u"There was a problem fetching the URL: [{0}]\n{1}".format(url, e))
+        logger.error(u"There was a problem fetching the URL: [{0}]".format(httpRegex.match(url).group(1)))
+        logger.debug(u"There was a problem fetching the URL: {0}".format(e))
         
     return (response, httpCode, encoding)
 
@@ -200,94 +201,100 @@ def rssReader():
 
     logger.info(u'RSSDaemon Started')
 
-    while True:
-
-        # Reads the RSSFeedConfig file each loop to ensure new entries are picked up
-        # rssFeeds
-        majorFeeds = {}
-        results = []
-        majorFeeds.update(Settings.readLastfmArtists())
-        majorFeeds.update(Settings.readTraktTV())
-        majorFeeds.update(Settings.readRSS())
-
-        # Holds all the torrents that are in the feeds, filtered, and new
-        rssTorrents = TorrentQueue.Queue()
-
-        # If single thread is specified then do not fork
-        # TODO: this should not happen and will be removed
-        if flannelfox.settings['maxRssThreads'] == 1:
-            for majorFeed in majorFeeds.itervalues():
-                logger.info(u"Feed Name: {0}".format(majorFeed["feedName"]))
-
-                result = __rssThread(majorFeed)
-
-                for r in result:
-                    rssTorrents.append(r)
-
-        # If multiple cores are allowed then for http calls
-        else:
-            logger.debug("Pool Created")
-            rssPool = Pool(processes=flannelfox.settings['maxRssThreads'])
-
-            try:
-                logger.info(u"Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
+    logger.debug("Pool Created")
+    rssPool = Pool(processes=flannelfox.settings['maxRssThreads'], maxtasksperchild=100)
 
 
-                for f in majorFeeds.itervalues():
-                    results.append(rssPool.apply_async(__rssThread, (f,)))
+    try:
+        while True:
 
-                logger.debug("Closing Pool")
-                rssPool.close()
+            # Reads the RSSFeedConfig file each loop to ensure new entries are picked up
+            # rssFeeds
+            majorFeeds = {}
+            results = []
+            majorFeeds.update(Settings.readLastfmArtists())
+            majorFeeds.update(Settings.readTraktTV())
+            majorFeeds.update(Settings.readRSS())
 
-            except Exception as e:
-                logger.error(u"There was an error fetching the RSS Feeds.\n{0}".format(e))
-                rssPool.terminate()
+            # Holds all the torrents that are in the feeds, filtered, and new
+            rssTorrents = TorrentQueue.Queue()
 
-            finally:
-                logger.debug("Joining Pool")
-                rssPool.join()
+            # If single thread is specified then do not fork
+            # TODO: this should not happen and will be removed
+            if flannelfox.settings['maxRssThreads'] == 1:
+                for majorFeed in majorFeeds.itervalues():
+                    logger.info(u"Feed Name: {0}".format(majorFeed["feedName"]))
 
+                    result = __rssThread(majorFeed)
 
-            # Try to get the rssFeeds and return the resutls
-            logger.debug(u'Appending items to the queue')
-            
-            try:
-                
-
-                for result in results:
-
-                    try:
-                        result = result.get(timeout=1)
-                    except Exception as e:
-                        logger.warning(u"There was a problem with reading one of the result sets.\n{0}".format(e))
-                        continue
-
-                    #Take each item in the result and append it to the Queue
                     for r in result:
                         rssTorrents.append(r)
 
-            except Exception as e:
-                logger.error(u"There was a problem appending data to the queue.\n{0}".format(e))
+            # If multiple cores are allowed then for http calls
+            else:
 
-            rssPool.terminate()
+                try:
+                    logger.info(u"Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
 
-        logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
+
+                    #for f in majorFeeds.itervalues():
+                    #    results.append(rssPool.apply_async(__rssThread, (f,)))
+                 
+                    results = rssPool.imap_unordered(__rssThread, majorFeeds.itervalues())
+
+                except Exception as e:
+                    logger.error(u"There was an error fetching the RSS Feeds.\n{0}".format(e))
+
+
+                # Try to get the rssFeeds and return the resutls
+                logger.debug(u'Appending items to the queue')
+                
+                try:
+                    
+
+                    for result in results:
+
+                        '''
+                        try:
+                            result = result.get(timeout=1)
+                        except Exception as e:
+                            logger.warning(u"There was a problem with reading one of the result sets.\n{0}".format(e))
+                            continue
+                        '''
+
+                        #Take each item in the result and append it to the Queue
+                        for r in result:
+                            rssTorrents.append(r)
+
+                except Exception as e:
+                    logger.error(u"There was a problem appending data to the queue.\n{0}".format(e))
+
+                #rssPool.terminate()
+
+            logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
+            
+
+
+            # Write matching filters to database
+            logger.debug("Writing Torrents to DB")
+            rssTorrents.writeToDB()
+
+            # Garbage collection
+            logger.debug("Garbage Collection")
+            majorFeeds = rssTorrents = results = result = None
+
+            #Settings.showHeap()
+
+            # Put the app to sleep
+            logger.debug("Sleep for a bit")
+            time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
+
+    except Exception as e:
+        logger.error(u"RSSReader Failed {0} {1}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), e))
+        logger.info(u"Closing RSS Pool")
+        rssPool.terminate()
+        rssPool = None
         
-
-
-        # Write matching filters to database
-        logger.debug("Writing Torrents to DB")
-        rssTorrents.writeToDB()
-
-        # Garbage collection
-        logger.debug("Garbage Collection")
-        majorFeeds = rssTorrents = results = result = rssPool = None
-
-        #Settings.showHeap()
-
-        # Put the app to sleep
-        logger.debug("Sleep for a bit")
-        time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
 
 
 def main():
