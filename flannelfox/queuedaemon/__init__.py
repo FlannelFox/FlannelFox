@@ -203,6 +203,7 @@ def queueReader():
 
             # Add new torrent
             # If a destination was not specified then don't pass one
+            logger.info("Adding: {0}".format(newTorrent))
             if newTorrent.get("feedDestination", None) is None:
                 torrentClient.addTorrentURL(newTorrent["url"])
             else:

@@ -136,14 +136,13 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
 
 def __rssThread(majorFeed):
 
-
-    logger.debug("Thread Started")
-    # This is needed to ensure Keyboard driven interruptions are handled correctly
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    rssTorrents = []
-
     try:
+
+        rssTorrents = []
+
+        logger.debug("Thread Started")
+        # This is needed to ensure Keyboard driven interruptions are handled correctly
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         # Check each feed for a list of possible torrents
         # Set the default type for untyped feeds
@@ -157,7 +156,7 @@ def __rssThread(majorFeed):
             # Read URL
             rssData, httpCode, encoding = __readRSSFeed(minorFeed["url"])
 
-            logger.debug(u"Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
+            logger.info(u"Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
 
             # If we did not get any data or there was an error then skip to the next feed
             if rssData is None or httpCode != 200:
@@ -202,11 +201,11 @@ def rssReader():
     logger.info(u'RSSDaemon Started')
 
     logger.debug("Pool Created")
-    rssPool = Pool(processes=flannelfox.settings['maxRssThreads'], maxtasksperchild=100)
-
 
     try:
         while True:
+
+            rssPool = Pool(processes=flannelfox.settings['maxRssThreads'], maxtasksperchild=10)
 
             # Reads the RSSFeedConfig file each loop to ensure new entries are picked up
             # rssFeeds
@@ -240,7 +239,8 @@ def rssReader():
                     #for f in majorFeeds.itervalues():
                     #    results.append(rssPool.apply_async(__rssThread, (f,)))
                  
-                    results = rssPool.imap_unordered(__rssThread, majorFeeds.itervalues())
+                    #results = rssPool.imap_unordered(__rssThread, majorFeeds.itervalues())
+                    results = [rssPool.apply_async(__rssThread, (f,)) for f in majorFeeds.itervalues()]
 
                 except Exception as e:
                     logger.error(u"There was an error fetching the RSS Feeds.\n{0}".format(e))
@@ -254,13 +254,13 @@ def rssReader():
 
                     for result in results:
 
-                        '''
+                        
                         try:
                             result = result.get(timeout=1)
                         except Exception as e:
                             logger.warning(u"There was a problem with reading one of the result sets.\n{0}".format(e))
                             continue
-                        '''
+                        
 
                         #Take each item in the result and append it to the Queue
                         for r in result:
@@ -270,6 +270,11 @@ def rssReader():
                     logger.error(u"There was a problem appending data to the queue.\n{0}".format(e))
 
                 #rssPool.terminate()
+
+
+            logger.info(u"Closing RSS Pool")
+            rssPool.close()
+            rssPool.join()
 
             logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
             
@@ -281,7 +286,7 @@ def rssReader():
 
             # Garbage collection
             logger.debug("Garbage Collection")
-            majorFeeds = rssTorrents = results = result = None
+            majorFeeds = rssTorrents = results = result = rssPool = None
 
             #Settings.showHeap()
 
@@ -291,9 +296,6 @@ def rssReader():
 
     except Exception as e:
         logger.error(u"RSSReader Failed {0} {1}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), e))
-        logger.info(u"Closing RSS Pool")
-        rssPool.terminate()
-        rssPool = None
         
 
 
