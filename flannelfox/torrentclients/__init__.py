@@ -21,19 +21,16 @@ urllib3.contrib.pyopenssl.inject_into_urllib3()
 # flannelfox Includes
 import flannelfox
 import Trackers
+
 from flannelfox import Settings
 from Torrent import Status as TorrentStatus
 from Torrent import Torrent
 from flannelfox.databases import Databases
 
+import Transmission
+
 # Setup the logging agent
 from flannelfox import logging
-
-from flannelfox.torrentclients import Transmission
-
-# Setup the database object
-TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
-
 
 class TorrentClient(object):
     '''
@@ -47,13 +44,17 @@ class TorrentClient(object):
 
     def __init__(self, settings={}):
 
+        # Setup the database object
+        self.torrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
+
         self.logger = logging.getLogger(__name__)
-        self.logger.debug("TorrentClient INIT")        
+        self.logger.info("TransmissionClient INIT")     
 
         if settings['type'] == "transmission":
-            self.logger.debug("TorrentClient Settings: {0}".format(settings))
+            self.logger.info("TorrentClient Setup")
             self.client = Transmission.Client(settings=settings)
         else:
+            self.logger.info("TorrentClient Not Defined")
             raise ValueError("Torrent client type not defined!")
             
 
@@ -69,7 +70,7 @@ class TorrentClient(object):
 
             update - Field to update in the database
         '''
-        TorrentDB.updateHashString(update=update, using=using)
+        self.torrentDB.updateHashString(update=update, using=using)
 
 
     def updateQueue(self):
@@ -103,7 +104,7 @@ class TorrentClient(object):
         return self.client.verifyTorrent(hashString=hashString)
 
 
-    def StopTorrent(self,hashString=None):
+    def stopTorrent(self,hashString=None):
         '''
         Stops a torrent
 
@@ -113,10 +114,10 @@ class TorrentClient(object):
         Returns:
             bool True is action completed
         '''
-        return self.client.StopTorrent(hashString=hashString)
+        return self.client.stopTorrent(hashString=hashString)
 
 
-    def StartTorrent(self, hashString=None):
+    def startTorrent(self, hashString=None):
         '''
         Starts a torrent
 
@@ -126,7 +127,7 @@ class TorrentClient(object):
         Returns:
             bool True is action completed
         '''
-        return self.client.StopTorrent(hashString=hashString)
+        return self.client.startTorrent(hashString=hashString)
 
 
     def removeBadTorrent(self, hashString=None, reason='No Reason Given'):
@@ -142,7 +143,7 @@ class TorrentClient(object):
         self.client.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
         # Remove the torrent from the DB
-        TorrentDB.deleteTorrent(hashString=hashString, reason=reason)
+        self.torrentDB.deleteTorrent(hashString=hashString, reason=reason)
 
 
     def removeDupeTorrent(self, hashString=None, url=None):
@@ -156,7 +157,7 @@ class TorrentClient(object):
             url - Url of the torrent we are adding
         '''
 
-        if not TorrentDB.torrentExists(hashString=hashString, url=url):
+        if not self.torrentDB.torrentExists(hashString=hashString, url=url):
 
             # Remove the torrent from the client
             self.removeTorrent(hashString=hashString, deleteData=False, reason='Duplicate Torrent')
@@ -166,7 +167,7 @@ class TorrentClient(object):
             # Remove the torrent from the DB
             # TODO: Perhaps this should be changed to just mark the torrent as added
             #       or blacklisted
-            TorrentDB.deleteTorrent(url=url, reason='Duplicate Torrent')
+            self.torrentDB.deleteTorrent(url=url, reason='Duplicate Torrent')
 
             return True
 
@@ -219,10 +220,10 @@ class TorrentClient(object):
         Returns:
             bool True is action completed successfully
         '''
-        self.logger.debug("TorrentClient adding torrent")
+        self.logger.info("TorrentClient adding torrent")
         result, response = self.client.addTorrentURL(url=url, destination=destination)
 
-        self.logger.debug("TorrentClient responded with ({0}, {1})".format(result, response))
+        self.logger.info("TorrentClient responded with ({0}, {1})".format(result, response))
 
         if result == 0:
 
@@ -230,8 +231,8 @@ class TorrentClient(object):
             sinceEpoch = int(time.time())
 
             # update hash, addedOn, added in DB
+            self.logger.info("TorrentClient added torrent")
             self.__updateHashString(using={u"url":url}, update={u"hashString":response, u"addedOn":sinceEpoch, u"added":1})
-
             time.sleep(10)
 
             return True
@@ -239,20 +240,21 @@ class TorrentClient(object):
         elif result == 1:
             # Torrent is broken so lets delete it from the DB, this leaves the opportunity
             # for the torrent to later be added again
+            self.logger.info("TorrentClient duplicate torrent")
             self.removeDupeTorrent(url=url, hashString=response)
-
             time.sleep(10)
 
             return False
 
         elif result == 2:
-            TorrentDB.deleteTorrent(url=url, reason=response)
-
+            self.logger.info("TorrentClient bad torrent, but we can retry")
+            self.torrentDB.deleteTorrent(url=url, reason=response)
             return False
 
         elif result == 3:
-            TorrentDB.addBlacklistedTorrent(url=url, reason=response)
-
+            self.logger.info("TorrentClient bad torrent, so blacklist it")
+            self.torrentDB.addBlacklistedTorrent(url=url, reason=response)
+            self.torrentDB.deleteTorrent(url=url, reason=response)
             return False
 
 

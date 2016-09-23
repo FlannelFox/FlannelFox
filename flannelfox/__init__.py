@@ -12,7 +12,9 @@ class debuglevels(object):
     ERROR=40
     WARNING=30
     INFO=20
+    THREADINGINFO=15
     DEBUG=10
+    THREADINGDEBUG=5
     NOTSET=0
 
     levelStrings = {
@@ -20,13 +22,17 @@ class debuglevels(object):
         "ERROR": 40,
         "WARNING": 30,
         "INFO": 20,
+        "THREADINGINFO": 15,
         "DEBUG": 10,
+        "THREADINGDEBUG": 5,
         "NOTSET": 0,
         "50": 50,
         "40": 40,
         "30": 30,
         "20": 20,
+        "15": 15,
         "10": 10,
+        "5": 5,
         "0": 0
     }
 

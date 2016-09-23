@@ -21,12 +21,16 @@ class Responses(object):
     '''
     Remove = [
         'unregistered torrent',
+        'not registered',
         'Unregistered torrent',
         'torrent not registered with this tracker',
         'invalid torrent'
     ]
     
+    Blacklist = [
+
+    ]
+
     Ok = [
         'tracker down for scheduled maintenance'
     ]
-

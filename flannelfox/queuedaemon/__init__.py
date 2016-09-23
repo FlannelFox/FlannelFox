@@ -9,7 +9,7 @@
 # -*- coding: utf-8 -*-
 
 # System Includes
-import time, sys, platform, os
+import time, sys, platform, os, traceback
 from time import gmtime, strftime
 
 # Third party modules
@@ -290,7 +290,7 @@ def main():
                 break
 
             except Exception as e:
-                logger.error(u"Application Stopped {0}".format(e))
+                logger.error(u"Application Stopped {0}\nTrace: {1}".format(e, traceback.format_exc() ))
                 
                 # Sleep for 10 seconds to give a bit of time for the error to try and resolve itself
                 # This is mainly related to the occurance of an error that can be generated randomly

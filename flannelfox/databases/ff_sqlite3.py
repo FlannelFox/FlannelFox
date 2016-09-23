@@ -26,7 +26,6 @@ from flannelfox.databases.exceptions import DatabaseException
 
 # Setup the logging agent
 from flannelfox import logging
-logger = logging.getLogger(__name__)
 
 # Database info
 TORRENT_DB = flannelfox.settings['files']['privateDir']+ur"/flannelfox.db"
@@ -43,6 +42,7 @@ GENERIC_TORRENTS_VIEW = ur"GenericTorrentsView"
 class Database(object):
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
 
         dbSetup = ( "PRAGMA foreign_keys = off;"
             "BEGIN TRANSACTION;"
@@ -94,12 +94,9 @@ class Database(object):
         the grabbers are looking for new torrents
         '''
 
-        query = u"INSERT INTO {0} ('url') VALUES ('{1}')".format(BLACKLISTED_TORRENTS_TABLE, url)
+        query = u"INSERT OR IGNORE INTO {0} ('url') VALUES ('{1}')".format(BLACKLISTED_TORRENTS_TABLE, url)
 
         result = self.__execDB(query)
-        
-        if result < 1:
-            logger.warning("There was a problem blacklisting a torrent:\n{0}\n{1}".format(e, query))
 
 
     def updateHashString(self, update, using):
@@ -127,7 +124,7 @@ class Database(object):
         result = self.__execDB(query)
         
         if result < 0:
-            logger.warning("There was a problem updating the hashstring of a torrent:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem updating the hashstring of a torrent:\n{0}".format(query))
 
 
     def addTorrentsToQueue(self, queue):
@@ -178,11 +175,11 @@ class Database(object):
                 result = self.__execDB(statement)
                 
                 if result < 0:
-                    logger.warning("There was a problem adding torrents to the queue:\n{0}\n{1}".format(e, statement))
+                    self.logger.warning("There was a problem adding torrents to the queue:\n{0}".format(statement))
 
 
         except (sql.Error, Exception) as e:
-            logger.warning("There was a problem adding torrents to the queue:\n{0}\n{1}".format(e, statement))
+            self.logger.warning("There was a problem adding torrents to the queue:\n{0}\n{1}".format(e, statement))
             return False
 
         return True
@@ -212,7 +209,7 @@ class Database(object):
             self.__execDB(query)
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem deleting a torrent:\n{0}\n{1}".format(e, statement))
+            self.logger.warning("There was a problem deleting a torrent:\n{0}\n{1}".format(e, statement))
 
 
 
@@ -295,7 +292,7 @@ class Database(object):
                 return False
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem checking if a torrent exists:\n{0}\n{1}".format(e, statement))
+            self.logger.warning("There was a problem checking if a torrent exists:\n{0}\n{1}".format(e, statement))
 
             # This is false because we were not able to get an answer back
             return False
@@ -324,7 +321,7 @@ class Database(object):
                 return sqlCursor.rowcount
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem executing the SQL exec:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem executing the SQL exec:\n{0}\n{1}".format(e, query))
             return -2
 
 
@@ -353,7 +350,7 @@ class Database(object):
                 return sqlCursor.rowcount
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem executing the SQL execscript:\n{0}\n{1}".format(e, script))
+            self.logger.warning("There was a problem executing the SQL execscript:\n{0}\n{1}".format(e, script))
             return -2
 
 
@@ -390,7 +387,7 @@ class Database(object):
             return rows
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem executing the SQL query:\n{0}\n{1}".format(e, query))
             return {}
 
 
@@ -432,7 +429,7 @@ class Database(object):
             return results
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem getting torrent info:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem getting torrent info:\n{0}\n{1}".format(e, query))
             return {}
 
 
@@ -494,7 +491,7 @@ class Database(object):
                 return results
 
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem getting queued torrents:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem getting queued torrents:\n{0}\n{1}".format(e, query))
             return []
 
 
@@ -517,5 +514,5 @@ class Database(object):
             return results[0][u"downloadsQueued"]
         
         except ( sql.Error, Exception ) as e:
-            logger.warning("There was a problem getting a count of queued torrents:\n{0}\n{1}".format(e, query))
+            self.logger.warning("There was a problem getting a count of queued torrents:\n{0}\n{1}".format(e, query))
             return -1

@@ -20,6 +20,7 @@ urllib3.contrib.pyopenssl.inject_into_urllib3()
 from bs4 import BeautifulSoup
 
 import flannelfox
+
 from flannelfox import logging
 
 # #############################################################################
@@ -29,7 +30,9 @@ from flannelfox import logging
 # These are torrentTitle prefixes that should be ignored when creating torrent
 # objects. This is mainly to fix rss feeds that have bad file entries in front.
 BAD_PREFIXES = [
-    u"autofill fail"
+    u"autofill fail",
+    u"TvHD \d+ \d+",
+    u"TvSD \d+ \d+"
 ]
 
 # These are keywords such as sources that come in multiple forms, but need to
@@ -143,13 +146,13 @@ def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
         if lastModified == -1:
             return True
 
-        logger.error("Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60)))    )
+        logger.debug("Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60)))    )
         difference = math.ceil((time.time()/60 - lastModified/60))
         if difference >= frequency:
-            logger.info("Cache update needed".format(cacheFilename) )
+            logger.debug("Cache update needed".format(cacheFilename) )
             return True
         else:
-            logger.info("Cache update not needed".format(cacheFilename))
+            logger.debug("Cache update not needed".format(cacheFilename))
             return False
             
     except Exception as e:
@@ -172,12 +175,12 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
 
     try:
         if isCacheUpdateNeeded(cacheFilename=cacheFilename, frequency=frequency):
-            logger.info("Cache update for {0} needed".format(cacheFilename))
+            logger.debug("Cache update for {0} needed".format(cacheFilename))
             with open(cacheFilename, 'w') as cache:
                 cache.write(data)
 
         else:
-            logger.info("Cache update for {0} not needed".format(cacheFilename)    )
+            logger.debug("Cache update for {0} not needed".format(cacheFilename)    )
 
     except Exception as e:
         logger.error("There was a problem writing a cache file {0}: {1}".format(cacheFilename, e))
@@ -195,7 +198,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
             if not configFile.endswith('.json'):
                 continue
 
-            logger.error("Loading LastFM config file: {0}".format(os.path.join(configFolder,configFile)))
+            logger.debug("Loading LastFM config file: {0}".format(os.path.join(configFolder,configFile)))
 
             # Try to read in the lastfm lists
             try:
@@ -248,7 +251,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        logger.info("Feeds with out names are not permitted")
+                        logger.warning("Feeds with out names are not permitted")
                         continue
 
                     # Get the feedType
@@ -263,7 +266,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         feedDestination = unicode(artistsList.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        logger.info("The feed has an invalid destination value")
+                        logger.warning("The feed has an invalid destination value")
                         continue
 
                     # Collect the feeds
@@ -276,7 +279,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        logger.info("The feed contains an invalid minorFeed:\n{0}".format(e))
+                        logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
                     if not isCacheUpdateNeeded(cacheFilename=cache_filename):
@@ -325,7 +328,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
 
                     if useCache:
                         try:
-                            logger.info("Reading cache file for [{0}]".format(cache_filename))
+                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
                             with open(cache_filename) as cache:
                                 artists = json.load(cache)
                         except Exception as e:
@@ -362,7 +365,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                                 feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        logger.info("The feedFilters contains an invalid rule:\n{0}".format(e))
+                        logger.warning("The feedFilters contains an invalid rule:\n{0}".format(e))
                         continue
 
                     # Append the Config item to the dict
@@ -389,7 +392,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
     '''
 
     logger = logging.getLogger(__name__)
-    logger.info("Reading TraktTV Feed")
+    logger.debug("Reading TraktTV Feed")
 
     majorFeeds = {}
     TRAKT_TV_LISTS = []
@@ -402,7 +405,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
             if not configFile.endswith('.json'):
                 continue
 
-            logger.error("Loading TraktTV config file: {0}".format(os.path.join(configFolder,configFile)))
+            logger.debug("Loading TraktTV config file: {0}".format(os.path.join(configFolder,configFile)))
 
             # Try to read in the trakt lists
             try:
@@ -445,7 +448,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        logger.info("Feeds with out names are not permitted")
+                        logger.warning("Feeds with out names are not permitted")
                         continue
 
                     cache_filename = os.path.join(flannelfox.settings['files']['traktCacheDir'],feedName+'.'+configFile)
@@ -476,7 +479,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         feedDestination = unicode(trakt_list.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        logger.info("The feed has an invalid destination value")
+                        logger.warning("The feed has an invalid destination value")
                         continue
 
                     # Collect the feeds
@@ -489,7 +492,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        logger.info("The feed contains an invalid minorFeed:\n{0}".format(e))
+                        logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
                     if not isCacheUpdateNeeded(cacheFilename=cache_filename):
@@ -521,7 +524,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
                     if useCache:
                         try:
-                            logger.info("Reading cache file for [{0}]".format(cache_filename))
+                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
                             with open(cache_filename) as cache:
                                 trakt_list_results = json.load(cache)
                         except Exception as e:
@@ -585,7 +588,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                                 feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        logger.info("The feedFilters contains an invalid rule:\n{0}".format(e))
+                        logger.warning("The feedFilters contains an invalid rule:\n{0}".format(e))
                         continue
 
                     # Append the Config item to the dict
@@ -637,7 +640,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
             if not configFile.endswith('.json'):
                 continue
 
-            logger.error("Loading RSS config file: {0}".format(os.path.join(configFolder,configFile)))
+            logger.debug("Loading RSS config file: {0}".format(os.path.join(configFolder,configFile)))
 
             # Try to read in the rss lists
             try:
@@ -676,7 +679,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
-                        logger.info("Feeds with out names are not permitted")
+                        logger.warning("Feeds with out names are not permitted")
                         continue
 
                     headers = {
@@ -695,7 +698,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                         feedDestination = unicode(rss_list.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
-                        logger.info("The feed has an invalid destination value")
+                        logger.warning("The feed has an invalid destination value")
                         continue
 
                     # Collect the feeds
@@ -708,7 +711,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                                 comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
                                 minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
                     except (ValueError, KeyError, TypeError) as e:
-                        logger.info("The feed contains an invalid minorFeed:\n{0}".format(e))
+                        logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
                     # Collect the feedFilters
@@ -734,7 +737,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                             feedFilterList.append(ruleList)
 
                     except Exception as e:
-                        logger.info("The feedFilters contains an invalid rule:\n{0}".format(e))
+                        logger.warning("The feedFilters contains an invalid rule:\n{0}".format(e))
                         continue
 
                     # Append the Config item to the dict
@@ -748,4 +751,3 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
         pass
 
     return majorFeeds
-

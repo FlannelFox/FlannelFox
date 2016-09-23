@@ -21,6 +21,7 @@ urllib3.contrib.pyopenssl.inject_into_urllib3()
 # flannelfox Includes
 import flannelfox
 import Trackers
+
 from flannelfox import Settings
 from Torrent import Status as TorrentStatus
 from Torrent import Torrent
@@ -47,7 +48,7 @@ class Client(object):
     def __init__(self, settings={}, host=u"localhost", port=u"9091", user=None, password=None, rpcLocation=None, https=False):
 
         self.logger = logging.getLogger(__name__)
-        self.logger.debug("TransmissionClient INIT")
+        self.logger.info("TransmissionClient INIT")
         self.logger.debug("TransmissionClient Settings: {0}".format(settings))
 
         self.elements = {}
@@ -416,13 +417,10 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == Responses.success:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Verification Succeeded")
+            self.logger.debug("Verification Succeeded")
             return True
         else:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Verification Failed")
-
+            self.logger.debug("Verification Failed")
             return False
 
 
@@ -460,13 +458,10 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == Responses.success:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Stop Succeeded")
+            self.logger.debug("Stop Succeeded")
             return True
         else:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Stop Failed")
-
+            self.logger.debug("Stop Failed")
             return False
 
 
@@ -504,13 +499,10 @@ class Client(object):
         response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
         if transmissionResponseCode == Responses.success:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Start Succeeded")
+            self.logger.debug("Start Succeeded")
             return True
         else:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Start Failed")
-
+            self.logger.debug("Start Failed")
             return False
 
 
@@ -576,13 +568,10 @@ class Client(object):
            self.logger.debug('Torrent Removed from client: {0}'.format(reason))
 
         if transmissionResponseCode == Responses.success:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Torrent Removal Succeeded")
+            self.logger.debug("Torrent Removal Succeeded")
             return True
         else:
-            if flannelfox.settings['debugLevel'] >= flannelfox.debuglevels.INFO:
-                self.logger.debug("Torrent Removal Failed")
-
+            self.logger.debug("Torrent Removal Failed")
             return False
 
 
@@ -640,7 +629,7 @@ class Client(object):
         Returns:
             bool True is action completed successfully
         '''
-        self.logger.debug("TransmissionClient adding torrent")
+        self.logger.info("TransmissionClient adding torrent")
         # Make sure a URL was passed
         if url is None:
             raise ValueError(u"A url must be provided to add a torrent")
@@ -675,7 +664,7 @@ class Client(object):
 
                 # Duplicate Torrent
                 duplicateTorrent = response["arguments"]["torrent-duplicate"]
-
+                self.logger.info("Duplicate Torrent Detected: {0}".format(transmissionResponseCode))
                 return (1, duplicateTorrent["hashString"])
 
         # Get Added Torrents
@@ -684,24 +673,18 @@ class Client(object):
                 
                 torrentAdded = response["arguments"]["torrent-added"]
 
-                self.logger.debug("Torrent Added: {0}".format(transmissionResponseCode))
-
-
         if transmissionResponseCode == Responses.success:
             # TODO: Remove extra trackers, this is needed due to a bug in
             # transmission that prevents non-communication related errors
             # from being seen when there is a back tracker.
+            self.logger.info("Torrent Added: {0}".format(transmissionResponseCode))
             return (0, torrentAdded["hashString"])
 
         else:
             # Here we need to handle any special errors encountered when
             # trying to add a torrent
 
-            self.logger.debug("Torrent Add Failed: {0}".format(transmissionResponseCode))
-
-
             if (transmissionResponseCode in [
-                        Responses.bad_torrent,
                         Responses.torrent_not_found,
                         Responses.torrent_bad_request,
                         Responses.torrent_service_unavailable,
@@ -710,19 +693,22 @@ class Client(object):
                 ):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
                 # for the torrent to later be added again
-                self.logger.debug("Torrent failed, but we can retry")
+                self.logger.info("Torrent failed, but we can retry")
                 return (2, transmissionResponseCode)
 
 
-            if (transmissionResponseCode in [
+            elif (transmissionResponseCode in [
                         Responses.bad_torrent,
                         Responses.torrent_not_found
                     ]
                 ):
-                self.logger.debug("Torrent is bad, so let's blacklist it")
+                self.logger.info("Torrent is bad, so let's blacklist it")
                 return (3, transmissionResponseCode)
 
-            
+            else:
+                self.logger.info("Torrent Add Failed: {0}".format(transmissionResponseCode))
+
+
     def getSlowestSeeds(self,num=None):
         '''
         Look for the slowest seeding torrents, slowest first

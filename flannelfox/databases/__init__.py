@@ -13,14 +13,10 @@
 import flannelfox
 from flannelfox import Settings
 
-# Setup the logging agent
-from flannelfox import logging
-logger = logging.getLogger(__name__)
-
 import ff_sqlite3
 
-
-
+# Setup the logging agent
+from flannelfox import logging
 
 class Databases(object):
 
@@ -28,13 +24,14 @@ class Databases(object):
         '''
         Set the database module that should be used
         '''
+        self.logger = logging.getLogger(__name__)
 
         if dbType == u'SQLITE3':
             self.Database = ff_sqlite3.Database()
-            logger.debug("SQLite3 Database initialized")
+            self.logger.debug("SQLite3 Database initialized")
             
         else:
-            logger.critcal("There was an issue initializing the database. [{0}]{1}".format(dbType, e))
+            self.logger.critcal("There was an issue initializing the database. [{0}]{1}".format(dbType, e))
 
 
     def addBlacklistedTorrent(self, url, reason='No Reason Given'):
@@ -99,7 +96,7 @@ class Databases(object):
             return self.Database.torrentBlacklisted(url=url)
 
         except Exception as e:
-            logger.error("There was an issue checking if a torrent is blacklisted in the database. {0}".format(e))
+            self.logger.error("There was an issue checking if a torrent is blacklisted in the database. {0}".format(e))
             return False
 
 

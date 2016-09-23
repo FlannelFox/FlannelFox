@@ -14,7 +14,7 @@
 
 
 # System Includes
-import time, re, signal, os
+import time, re, signal, os, traceback
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 from time import gmtime, strftime
@@ -49,6 +49,7 @@ def __readRSSFeed(url):
     xmlData = None
     httpCode = None
     encoding = "utf-8"
+    pid = os.getpid()
 
     try:
 
@@ -63,11 +64,11 @@ def __readRSSFeed(url):
         response = r.content
         httpCode = r.status_code
         encoding = r.encoding
-        logger.debug(u"RSS fetch OK URL: [{0}]|[{1}]".format(httpRegex.match(url).group(1), r.status_code))
+        logger.threadingDebug(u"[T:{0}] RSS fetch OK URL: [{1}]|[{2}]".format(pid, httpRegex.match(url).group(1), r.status_code))
 
     except Exception as e:
-        logger.error(u"There was a problem fetching the URL: [{0}]".format(httpRegex.match(url).group(1)))
-        logger.debug(u"There was a problem fetching the URL: {0}".format(e))
+        logger.threadingInfo(u"[T:{0}] There was a problem fetching the URL: [{1}]\n-  {2}".format(pid, httpRegex.match(url).group(1), e))
+        pass
         
     return (response, httpCode, encoding)
 
@@ -78,6 +79,7 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
     '''
 
     rssTorrents = []
+    pid = os.getpid()
 
     try:
         if not isinstance(xmlData,(str,unicode)):
@@ -93,19 +95,26 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
 
         for rssItem in rssItems.iter("item"):
 
-            title = rssItem.find("title").text
+            # Try to get a title property, if we can't then skip this item
+            try:
+                title = rssItem.find("title").text
 
-            if title is not None and title != u"":
-                title = unicode(title.strip())
-                title = title.replace(u" & ",u" and ")
-            else:
+                if title is not None and title != u"":
+                    title = unicode(title.strip())
+                    title = title.replace(u" & ",u" and ")
+                else:
+                    continue
+            except:
                 continue
 
-            link = unicode(rssItem.find("link").text.strip())
-            link = link.replace(u' ', u"%20")
+            # Try to get a link property, if we can't then skip this item
+            try:
+                link = unicode(rssItem.find("link").text.strip())
+                link = link.replace(u' ', u"%20")
 
-            # If the torrent does not have a url then skip it,
-            if link is None or link == u'':
+                if link is None or link == u'':
+                    continue
+            except:
                 continue
 
             # Try to create a torrent from the title
@@ -116,19 +125,22 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
                 if torrentItem is not None:
                     rssTorrents.append(torrentItem)
                 else:
-                    raise TypeError(u"The Title given does not appear to be of type: {0}\n{1}".format(feedType, title))
+                    raise TypeError(u"The Title given does not appear to be of type: {0}\n-  {1}".format(feedType, title))
 
 
             except (KeyError) as e:
-                logger.debug(u"A valid Feed Type was not specified:\n{0}".format(e))
+                logger.threadingInfo(u"[T:{0}] A valid Feed Type was not specified:\n-  {1}".format(pid, e))
+                pass
 
             except (TypeError, ValueError) as e:
-                logger.debug(u"There was a problem creating a torrent:\n{0}".format(e))
+                logger.threadingDebug(u"There was a problem creating a torrent:\n-  {0}".format(e))
+                pass
 
         rssItems = None
 
     except (IOError,ValueError,ET.ParseError) as e:
-        logger.error(u"There was a problem reading the RSS Feed:\n{0}".format(e))
+        logger.threadingInfo(u"[T:{0}]  There was a problem reading the RSS Feed:\n-  {1}".format(pid, e))
+        pass
 
 
     return rssTorrents
@@ -136,13 +148,18 @@ def __rssToTorrents(xmlData, feedType=u"none", feedDestination=None, minRatio=0.
 
 def __rssThread(majorFeed):
 
+    error = None
+    processed = 0
+    pid = os.getpid()
+
     try:
 
         rssTorrents = []
 
-        logger.debug("Thread Started")
+        logger.threadingInfo("[T:{0}] Thread Started".format(pid))
+        
         # This is needed to ensure Keyboard driven interruptions are handled correctly
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         # Check each feed for a list of possible torrents
         # Set the default type for untyped feeds
@@ -156,7 +173,7 @@ def __rssThread(majorFeed):
             # Read URL
             rssData, httpCode, encoding = __readRSSFeed(minorFeed["url"])
 
-            logger.info(u"Checking URL: {0} [{1}]".format(httpRegex.match(minorFeed["url"]).group(1), httpCode))
+            logger.threadingDebug(u"[T:{0}] Checking URL: {1} [{2}]".format(pid, httpRegex.match(minorFeed["url"]).group(1), httpCode))
 
             # If we did not get any data or there was an error then skip to the next feed
             if rssData is None or httpCode != 200:
@@ -167,30 +184,40 @@ def __rssThread(majorFeed):
 
             # Create a list of torrents from the RSS Feed
             torrents = __rssToTorrents(rssData, feedType=majorFeed["feedType"], feedDestination=majorFeed["feedDestination"],minRatio=minorFeed["minRatio"],comparison=minorFeed["comparison"],minTime=minorFeed["minTime"])
+
+            # Update the processed count
+            processed += len(torrents)
+
             for torrent in torrents:
 
                 # Check the filters and see if anything should be excluded
                 if torrent.filterMatch(majorFeed["feedFilters"]):
+                    rssTorrents.append(torrent)
+                '''
                     logger.debug("Matched Torrent: ")
                     logger.debug("======================")
                     logger.debug(u"{0}".format(torrent))
                     logger.debug("======================")
-                    rssTorrents.append(torrent)
                 else:
                     logger.debug("UnMatched Torrent: ")
                     logger.debug("======================")
                     logger.debug(u"{0}".format(torrent))
                     logger.debug("======================")
+                '''
 
         # Garbage Collection
         minorFeed = rssData = torrents = None
 
     except Exception as e:
-        logger.error(u"Thread ERROR: {0} Exception: {1}".format(minorFeed["url"]),e)
+        error = u"ERROR: [T:{0}]: {0}\nException: {1}\nTraceback: {2}".format(minorFeed["url"],e, traceback.format_exc())
         rssTorrents = []
 
-    logger.debug("Thread Done")
-    return rssTorrents
+    except:
+        error = u'ERROR: [T:{0}]: {0}'.format(traceback.format_exc())
+        rssTorrents = []
+
+    logger.threadingInfo("[T:{0}] Thread Done".format(pid))
+    return (pid, rssTorrents, error, processed)
 
 
 def rssReader():
@@ -204,6 +231,9 @@ def rssReader():
 
     try:
         while True:
+
+            totalProcessed = 0
+            startTime = time.time()
 
             rssPool = Pool(processes=flannelfox.settings['maxRssThreads'], maxtasksperchild=10)
 
@@ -224,64 +254,85 @@ def rssReader():
                 for majorFeed in majorFeeds.itervalues():
                     logger.info(u"Feed Name: {0}".format(majorFeed["feedName"]))
 
-                    result = __rssThread(majorFeed)
+                    torrents, error, processed = __rssThread(majorFeed)
 
-                    for r in result:
-                        rssTorrents.append(r)
+                    for t in torrents:
+                        rssTorrents.append(t)
 
             # If multiple cores are allowed then for http calls
             else:
 
                 try:
-                    logger.info(u"Pool fetch of RSS Started {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
+                    logger.info(u"Pool fetch of RSS Started {0}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime())))
 
 
                     #for f in majorFeeds.itervalues():
                     #    results.append(rssPool.apply_async(__rssThread, (f,)))
                  
-                    #results = rssPool.imap_unordered(__rssThread, majorFeeds.itervalues())
-                    results = [rssPool.apply_async(__rssThread, (f,)) for f in majorFeeds.itervalues()]
+                    results = rssPool.imap_unordered(__rssThread, majorFeeds.itervalues())
 
                 except Exception as e:
-                    logger.error(u"There was an error fetching the RSS Feeds.\n{0}".format(e))
+                    logger.error(u"ERROR: There was an error fetching the RSS Feeds.\n-  {0}".format(e))
 
 
                 # Try to get the rssFeeds and return the resutls
-                logger.debug(u'Appending items to the queue')
+                logger.info(u'Appending items to the queue')
                 
                 try:
                     
-
                     for result in results:
-
                         
-                        try:
-                            result = result.get(timeout=1)
-                        except Exception as e:
-                            logger.warning(u"There was a problem with reading one of the result sets.\n{0}".format(e))
-                            continue
-                        
-
                         #Take each item in the result and append it to the Queue
-                        for r in result:
-                            rssTorrents.append(r)
+                        pid, torrents, error, processed = result
+
+                        if error is not None:
+                            logger.error('ERROR: There was a problem processing a rss feed:\n-  {0}'.format(error))
+
+                        totalProcessed += processed
+
+                        currentTorrent = 0
+                        for t in torrents:
+
+                            currentTorrent += 1
+
+                            logger.debug(u'Processing: T[{0}]I[{1}]'.format(pid, currentTorrent))
+                            try:
+                                rssTorrents.append(t)
+                            except Exception as e:
+                                logger.error(u"ERROR: There was a problem appending data to the queue.\n-  {0}".format(e))
+
+                    try:
+
+                        logger.debug(u"Closing RSS Pool")
+                        rssPool.close()
+                    
+                        logger.debug(u"Joining RSS Pool Workers")
+                        rssPool.join()
+                    except:
+                        logger.error(u"ERROR: There was a problem clearing the pool.\n-  {0}".format(traceback.format_exc()))    
 
                 except Exception as e:
-                    logger.error(u"There was a problem appending data to the queue.\n{0}".format(e))
+                    logger.error(u"ERROR: There was a problem iterating the results.\n-  {0}".format(e))
 
-                #rssPool.terminate()
+                    try:
+                        logger.debug(u"Closing RSS Pool")
+                        rssPool.close()
 
+                        logger.debug(u"Terminating RSS Pool Workers")
+                        rssPool.terminate()
 
-            logger.info(u"Closing RSS Pool")
-            rssPool.close()
-            rssPool.join()
+                        logger.debug(u"Joining RSS Pool Workers")
+                        rssPool.join()
+                    except:
+                        logger.error(u"ERROR: There was a problem clearing the pool after an error.\n-  {0}".format(traceback.format_exc()))    
 
             logger.info(u"Pool fetch of RSS Done {0} {1} records loaded".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), len(rssTorrents)))
             
-
+            # Log the number of records processed
+            logger.info("Processed {0} items in {1:.2f} second(s)".format(totalProcessed, time.time() - startTime))
 
             # Write matching filters to database
-            logger.debug("Writing Torrents to DB")
+            logger.debug("Writing {0} Torrents to DB".format(len(rssTorrents)))
             rssTorrents.writeToDB()
 
             # Garbage collection
@@ -291,11 +342,21 @@ def rssReader():
             #Settings.showHeap()
 
             # Put the app to sleep
-            logger.debug("Sleep for a bit")
+            logger.info("Sleep for a bit")
             time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
 
     except Exception as e:
-        logger.error(u"RSSReader Failed {0} {1}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), e))
+        logger.error(u"ERROR: RSSReader Failed {0} {1}\n-  {2}".format(
+            strftime("%Y-%m-%d %H:%M:%S", gmtime()),
+            e, 
+            traceback.format_exc())
+        )
+
+    except:
+        logger.error(u"ERROR: RSSReader Failed {0}\n-  {1}".format(
+            strftime("%Y-%m-%d %H:%M:%S", gmtime()), 
+            traceback.format_exc())
+        )
         
 
 
@@ -313,15 +374,15 @@ def main():
 
         while True:
             try:
-                logger.info("RSSReader Started")
+                logger.critical("RSSReader Started")
                 rssReader()
 
             except KeyboardInterrupt as e:
-                logger.error(u"Application Aborted")
+                logger.critical(u"Application Aborted")
                 break
 
             except Exception as e:
-                logger.error(u"Application Stopped {0}".format(e))
+                logger.critical(u"Application Stopped {0}".format(e))
 
                 # Sleep for 10 seconds to give a bit of time for the error to try and resolve itself
                 # This is mainly related to the occurance of an error that can be generated randomly
@@ -329,7 +390,7 @@ def main():
                 time.sleep(10)
 
 
-    logger.info(u"Application Exited")
+    logger.critical(u"Application Exited")
 
         
 if __name__ == '__main__':
