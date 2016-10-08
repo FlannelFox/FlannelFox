@@ -9,8 +9,8 @@
 # -*- coding: utf-8 -*-
 
 # System Includes
-import datetime, json, math, time
-import os
+import datetime, json, math, time, os
+import xml.etree.ElementTree as ET
 
 # Third party modules
 import requests
@@ -603,6 +603,221 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
         pass
     logger.debug("=================")
     logger.debug("TraktMajorFilters")
+    logger.debug("=================")
+    logger.debug(majorFeeds)
+    logger.debug("=================")
+    return majorFeeds
+
+
+def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir']):
+    '''
+    Get the authors I like from goodreads
+    '''
+
+    logger = logging.getLogger(__name__)
+    logger.debug("Reading Goodreads Feed")
+
+    majorFeeds = {}
+    goodreadsLists = []
+
+    try:
+
+        for configFile in os.listdir(configFolder):
+            
+            # Skip non-json files
+            if not configFile.endswith('.json'):
+                continue
+
+            logger.debug("Loading Goodreads config file: {0}".format(os.path.join(configFolder,configFile)))
+
+            # Try to read in the goodreads lists
+            try:
+                with open(os.path.join(configFolder,configFile)) as goodreads_json:
+                    goodreadsLists = json.load(goodreads_json)
+            except Exception as e:
+                logger.error("There was a problem reading the goodreads config file\n{0}".format(e))
+                continue
+
+            # Loop through the goodreads lists
+            try:
+
+                for goodreads_list in goodreadsLists:
+
+                    # Make sure our list at least has some basic parts
+                    if (goodreads_list.get("username", None) is None or
+                        goodreads_list.get("api_key", None) is None or
+                        goodreads_list.get("list_name", None) is None or
+                        goodreads_list.get("type", None) is None or
+                        goodreads_list.get("feedDestination", None) is None or
+                        goodreads_list.get("minorFeeds", None) is None):
+
+                        continue
+
+                    # Setup some variables for the feed
+                    feedName = None
+                    feedType = None
+                    feedDestination = None
+                    minorFeeds = []
+                    feedFilters = []
+                    goodreads_list_results = []
+                    httpResponse = -1
+                    title = None
+                    year = None
+                    useCache = False
+
+                    # Get the feedName
+                    try:
+                        feedName = unicode(goodreads_list.get("list_name",u"").lower().strip())
+                        if feedName == u"":
+                            raise ValueError
+                    except (ValueError, KeyError) as e:
+                        logger.warning("Feeds with out names are not permitted")
+                        continue
+
+                    cache_filename = os.path.join(flannelfox.settings['files']['goodreadsCacheDir'],feedName+'.'+configFile)
+
+                    if not os.path.exists(os.path.dirname(cache_filename)):
+                        try:
+                            os.makedirs(os.path.dirname(cache_filename))
+                        except OSError as exc: # Guard against race condition
+                            continue
+
+                    headers = {
+                        "user-agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36",
+                    }
+
+                    params = {
+                        'key':goodreads_list.get("api_key", None)
+                    }
+      
+                    # Get the feedType
+                    try:
+                        feedType = unicode(goodreads_list.get("type",u"none").lower().strip())
+                    except (ValueError, KeyError) as e:
+                        feedType = u"none"
+                        continue
+
+                    # Get the feedDestination
+                    try:
+                        feedDestination = unicode(goodreads_list.get("feedDestination",u"").strip())
+                        # TODO: Check if the location exists
+                    except (ValueError, KeyError) as e:
+                        logger.warning("The feed has an invalid destination value")
+                        continue
+
+                    # Collect the feeds
+                    try:
+                        if goodreads_list.get("minorFeeds",[]) is not None and len(goodreads_list.get("minorFeeds",[])) > 0:
+                            for minorFeed in goodreads_list.get("minorFeeds",[]):
+                                url = unicode(minorFeed.get("url",u"").strip())
+                                minTime = int(minorFeed.get("minTime",u"0").strip()) # Hours Int
+                                minRatio = float(minorFeed.get("minRatio",u"0.0").strip()) # Ratio Float
+                                comparison = minorFeed.get("comparison",u"or").strip() # Comparison String
+                                minorFeeds.append({u"url":url,u"minTime":minTime,u"minRatio":minRatio,u"comparison":comparison})
+                    except (ValueError, KeyError, TypeError) as e:
+                        logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
+                        continue
+
+                    if not isCacheUpdateNeeded(cacheFilename=cache_filename):
+                        useCache = True
+
+                    if not useCache:
+                        try:
+                            r = requests.get("{0}/user/show/{1}.xml".format(flannelfox.settings['apis']['goodreads'], goodreads_list["username"]), headers=headers, params=params, timeout=60)
+                            httpResponse = r.status_code
+
+                            if httpResponse == 200:
+                                # Parse the RSS XML and turn it into a json list
+                                xmldata = ET.fromstring(r.text)
+                                authors = xmldata.find('favorite_authors')
+                                goodreads_lits_results = []
+
+                                for item in authors.iter('author'):
+                                    try:
+                                        author = item.find('name').text
+
+                                        if author is not None and author != "":
+                                            author = unicode(author.strip())
+                                            author = author.replace(u" & ",u" and ")
+                                            goodreads_lits_results.append(author)
+                                        else:
+                                            continue
+                                    except:
+                                        continue
+
+                            else:
+                                logger.error("There was a problem fetching a goodreads list file: {0}".format(httpResponse))
+                            
+                        except Exception as e:
+                            logger.error("There was a problem fetching a goodreads list file: {0}".format(e))
+                            goodreads_list_results = []
+                            httpResponse = -1
+
+                        logger.error("Fetching goodreads list page: [{0}]".format(httpResponse))
+
+                        # If we are able to get a list then cache it
+                        # TODO: See if Last-Modified can be added to save this step when possible
+                        if httpResponse == 200:
+                            updateCacheFile(cacheFilename=cache_filename, data=json.dumps(goodreads_list_results))
+                        else:
+                            useCache = True
+
+                    if useCache:
+                        try:
+                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
+                            with open(cache_filename) as cache:
+                                goodreads_list_results = json.load(cache)
+                        except Exception as e:
+                            logger.error("There was a problem reading a goodreads list cache file: {0}".format(e))
+                            continue
+
+                    # Collect the feedFilters
+                    try:
+                        feedFilterList = []
+
+                        majorFeedFilters = goodreads_list.get("filters", [])
+
+                        for filterItem in majorFeedFilters:
+
+                            # Loop through each author and append a filter for it
+                            for item in goodreads_list_results:
+                                ruleList = []
+
+                                if goodreads_list.get("like", False):
+                                    title_match_method = u"titleLike"
+                                else:
+                                    title_match_method = u"title"
+
+                                ruleList.append({u"key":title_match_method, u"val":title, u"exclude":False})
+                                
+                                # Load the excludes
+                                for exclude in filterItem.get("exclude", []):
+                                    key, val = exclude.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":True})
+
+                                for include in filterItem.get("include", []):
+                                    key, val = include.items()[0]
+                                    ruleList.append({u"key":key, u"val":val, u"exclude":False})
+
+
+                                feedFilterList.append(ruleList)
+
+                    except Exception as e:
+                        logger.warning("The feedFilters contains an invalid rule:\n{0}".format(e))
+                        continue
+
+                    # Append the Config item to the dict
+                    majorFeeds[configFile+'.'+feedName] = {u"feedName":feedName,u"feedType":feedType,u"feedDestination":feedDestination,u"minorFeeds":minorFeeds,u"feedFilters":feedFilterList}
+                #f = open("feeds_new.json", 'w')
+                #json.dump(majorFeeds, f)
+            except Exception as e:
+                logger.error("There was a problem reading a goodreads list file:\n{0}".format(e))
+
+    except Exception as e:
+        # This should only happen if there was an issue getting files names from the directory
+        pass
+    logger.debug("=================")
+    logger.debug("GoodreadsFilters")
     logger.debug("=================")
     logger.debug(majorFeeds)
     logger.debug("=================")

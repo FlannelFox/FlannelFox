@@ -66,11 +66,14 @@ settings = {
         'lastfmConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds/lastfmfeeds'),
         'lastfmCacheDir': os.path.join(HOME_DIR, '.flannelfox/config/LastfmArtistsConfigCache'),
         'traktConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds/traktfeeds'),
-        'traktCacheDir': os.path.join(HOME_DIR, '.flannelfox/config/TraktConfigCache')
+        'traktCacheDir': os.path.join(HOME_DIR, '.flannelfox/config/TraktConfigCache'),
+        'goodreadsConfigDir': os.path.join(HOME_DIR, '.flannelfox/config/feeds/goodreadsfeeds'),
+        'goodreadsCacheDir': os.path.join(HOME_DIR, '.flannelfox/config/GoodreadsConfigCache')
     },
     'apis':{
         'lastfm':'https://ws.audioscrobbler.com/2.0/',
-        'trakt':'https://api-v2launch.trakt.tv'
+        'trakt':'https://api-v2launch.trakt.tv',
+        'goodreads':'https://www.goodreads.com/'
     },
     'database':{
         'defaultDatabaseEngine': 'SQLITE3'
