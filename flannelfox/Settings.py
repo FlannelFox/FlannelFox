@@ -128,7 +128,7 @@ def changeCharset(data, charset="utf-8", type="xml"):
     return data
 
 
-def modification_date(filename):
+def modificationDate(filename):
     logger = logging.getLogger(__name__)
     try:
         return int(datetime.datetime.fromtimestamp(os.path.getmtime(filename)).strftime("%s"))
@@ -141,7 +141,7 @@ def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
     logger = logging.getLogger(__name__)
     try:
         # Get the modification time
-        lastModified = modification_date(cacheFilename)
+        lastModified = modificationDate(cacheFilename)
 
         if lastModified == -1:
             return True
@@ -238,10 +238,10 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                     httpResponse = -1
                     useCache = False
 
-                    cache_filename = "{0}/{1}".format(flannelfox.settings['files']['lastfmCacheDir'],artistsList.get("list_name")+'.'+configFile)
-                    if not os.path.exists(os.path.dirname(cache_filename)):
+                    cacheFileName = "{0}/{1}".format(flannelfox.settings['files']['lastfmCacheDir'],artistsList.get("list_name")+'.'+configFile)
+                    if not os.path.exists(os.path.dirname(cacheFileName)):
                         try:
-                            os.makedirs(os.path.dirname(cache_filename))
+                            os.makedirs(os.path.dirname(cacheFileName))
                         except OSError as exc: # Guard against race condition
                             continue
 
@@ -282,7 +282,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cache_filename):
+                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
@@ -322,14 +322,14 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cache_filename, data=json.dumps(artists))
+                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(artists))
                         else:
                             useCache = True
 
                     if useCache:
                         try:
-                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
-                            with open(cache_filename) as cache:
+                            logger.debug("Reading cache file for [{0}]".format(cacheFileName))
+                            with open(cacheFileName) as cache:
                                 artists = json.load(cache)
                         except Exception as e:
                             logger.error("There was a problem reading a lastfm list cache file: {0}".format(e))
@@ -409,8 +409,8 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
             # Try to read in the trakt lists
             try:
-                with open(os.path.join(configFolder,configFile)) as trakt_json:
-                    TRAKT_TV_LISTS = json.load(trakt_json)
+                with open(os.path.join(configFolder,configFile)) as traktJson:
+                    TRAKT_TV_LISTS = json.load(traktJson)
             except Exception as e:
                 logger.error("There was a problem reading the trakt config file\n{0}".format(e))
                 continue
@@ -418,15 +418,15 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
             # Loop through the trakt.tv lists
             try:
 
-                for trakt_list in TRAKT_TV_LISTS:
+                for traktList in TRAKT_TV_LISTS:
 
                     # Make sure our list at least has some basic parts
-                    if (trakt_list.get("username", None) is None or
-                        trakt_list.get("api_key", None) is None or
-                        trakt_list.get("list_name", None) is None or
-                        trakt_list.get("type", None) is None or
-                        trakt_list.get("feedDestination", None) is None or
-                        trakt_list.get("minorFeeds", None) is None):
+                    if (traktList.get("username", None) is None or
+                        traktList.get("api_key", None) is None or
+                        traktList.get("list_name", None) is None or
+                        traktList.get("type", None) is None or
+                        traktList.get("feedDestination", None) is None or
+                        traktList.get("minorFeeds", None) is None):
 
                         continue
 
@@ -436,7 +436,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                     feedDestination = None
                     minorFeeds = []
                     feedFilters = []
-                    trakt_list_results = []
+                    traktListResults = []
                     httpResponse = -1
                     title = None
                     year = None
@@ -444,18 +444,18 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
                     # Get the feedName
                     try:
-                        feedName = unicode(trakt_list.get("list_name",u"").lower().strip())
+                        feedName = unicode(traktList.get("list_name",u"").lower().strip())
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
                         logger.warning("Feeds with out names are not permitted")
                         continue
 
-                    cache_filename = os.path.join(flannelfox.settings['files']['traktCacheDir'],feedName+'.'+configFile)
+                    cacheFileName = os.path.join(flannelfox.settings['files']['traktCacheDir'],feedName+'.'+configFile)
 
-                    if not os.path.exists(os.path.dirname(cache_filename)):
+                    if not os.path.exists(os.path.dirname(cacheFileName)):
                         try:
-                            os.makedirs(os.path.dirname(cache_filename))
+                            os.makedirs(os.path.dirname(cacheFileName))
                         except OSError as exc: # Guard against race condition
                             continue
 
@@ -463,20 +463,20 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         "user-agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36",
                         "Content-Type":"application/json",
                         "trakt-api-version":"2",
-                        "trakt-api-key":trakt_list.get("api_key","")
+                        "trakt-api-key":traktList.get("api_key","")
                     }
 
       
                     # Get the feedType
                     try:
-                        feedType = unicode(trakt_list.get("type",u"none").lower().strip())
+                        feedType = unicode(traktList.get("type",u"none").lower().strip())
                     except (ValueError, KeyError) as e:
                         feedType = u"none"
                         continue
 
                     # Get the feedDestination
                     try:
-                        feedDestination = unicode(trakt_list.get("feedDestination",u"").strip())
+                        feedDestination = unicode(traktList.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
                         logger.warning("The feed has an invalid destination value")
@@ -484,8 +484,8 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
                     # Collect the feeds
                     try:
-                        if trakt_list.get("minorFeeds",[]) is not None and len(trakt_list.get("minorFeeds",[])) > 0:
-                            for minorFeed in trakt_list.get("minorFeeds",[]):
+                        if traktList.get("minorFeeds",[]) is not None and len(traktList.get("minorFeeds",[])) > 0:
+                            for minorFeed in traktList.get("minorFeeds",[]):
                                 url = unicode(minorFeed.get("url",u"").strip())
                                 minTime = int(minorFeed.get("minTime",u"0").strip()) # Hours Int
                                 minRatio = float(minorFeed.get("minRatio",u"0.0").strip()) # Ratio Float
@@ -495,22 +495,22 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cache_filename):
+                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
                         try:
-                            r = requests.get("{0}/users/{1}/lists/{2}/items".format(flannelfox.settings['apis']['trakt'], trakt_list["username"], trakt_list["list_name"]), headers=headers, timeout=60)
+                            r = requests.get("{0}/users/{1}/lists/{2}/items".format(flannelfox.settings['apis']['trakt'], traktList["username"], traktList["list_name"]), headers=headers, timeout=60)
                             httpResponse = r.status_code
 
                             if httpResponse == 200:
-                                trakt_list_results = r.json()
+                                traktListResults = r.json()
                             else:
                                 logger.error("There was a problem fetching a trakt list file: {0}".format(httpResponse))
                             
                         except Exception as e:
                             logger.error("There was a problem fetching a trakt list file: {0}".format(e))
-                            trakt_list_results = []
+                            traktListResults = []
                             httpResponse = -1
 
                         logger.error("Fetching trakt list page: [{0}]".format(httpResponse))
@@ -518,15 +518,15 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cache_filename, data=json.dumps(trakt_list_results))
+                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(traktListResults))
                         else:
                             useCache = True
 
                     if useCache:
                         try:
-                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
-                            with open(cache_filename) as cache:
-                                trakt_list_results = json.load(cache)
+                            logger.debug("Reading cache file for [{0}]".format(cacheFileName))
+                            with open(cacheFileName) as cache:
+                                traktListResults = json.load(cache)
                         except Exception as e:
                             logger.error("There was a problem reading a trakt list cache file: {0}".format(e))
                             continue
@@ -535,18 +535,18 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                     try:
                         feedFilterList = []
 
-                        majorFeedFilters = trakt_list.get("filters", [])
+                        majorFeedFilters = traktList.get("filters", [])
 
                         for filterItem in majorFeedFilters:
 
                             # Loop through each show and append a filter for it
-                            for item in trakt_list_results:
+                            for item in traktListResults:
                                 ruleList = []
 
-                                if trakt_list.get("like", False):
-                                    title_match_method = u"titleLike"
+                                if traktList.get("like", False):
+                                    titleMatchMethod = u"titleLike"
                                 else:
-                                    title_match_method = u"title"
+                                    titleMatchMethod = u"title"
 
                                 # Make sure we have some shows to fetch
                                 # TODO: make this use the type field in the json file to determine if it should be show or movie
@@ -570,7 +570,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                                     continue
 
 
-                                ruleList.append({u"key":title_match_method, u"val":title, u"exclude":False})
+                                ruleList.append({u"key":titleMatchMethod, u"val":title, u"exclude":False})
                                 
                                 if year is not None:
                                     ruleList.append({u"key":"year", u"val":year, u"exclude":False})
@@ -632,8 +632,8 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
 
             # Try to read in the goodreads lists
             try:
-                with open(os.path.join(configFolder,configFile)) as goodreads_json:
-                    goodreadsLists = json.load(goodreads_json)
+                with open(os.path.join(configFolder,configFile)) as goodreadsJson:
+                    goodreadsLists = json.load(goodreadsJson)
             except Exception as e:
                 logger.error("There was a problem reading the goodreads config file\n{0}".format(e))
                 continue
@@ -641,15 +641,15 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
             # Loop through the goodreads lists
             try:
 
-                for goodreads_list in goodreadsLists:
+                for goodreadsList in goodreadsLists:
 
                     # Make sure our list at least has some basic parts
-                    if (goodreads_list.get("username", None) is None or
-                        goodreads_list.get("api_key", None) is None or
-                        goodreads_list.get("list_name", None) is None or
-                        goodreads_list.get("type", None) is None or
-                        goodreads_list.get("feedDestination", None) is None or
-                        goodreads_list.get("minorFeeds", None) is None):
+                    if (goodreadsList.get("username", None) is None or
+                        goodreadsList.get("api_key", None) is None or
+                        goodreadsList.get("list_name", None) is None or
+                        goodreadsList.get("type", None) is None or
+                        goodreadsList.get("feedDestination", None) is None or
+                        goodreadsList.get("minorFeeds", None) is None):
 
                         continue
 
@@ -659,7 +659,7 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                     feedDestination = None
                     minorFeeds = []
                     feedFilters = []
-                    goodreads_list_results = []
+                    goodreadsListResults = []
                     httpResponse = -1
                     title = None
                     year = None
@@ -667,18 +667,18 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
 
                     # Get the feedName
                     try:
-                        feedName = unicode(goodreads_list.get("list_name",u"").lower().strip())
+                        feedName = unicode(goodreadsList.get("list_name",u"").lower().strip())
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
                         logger.warning("Feeds with out names are not permitted")
                         continue
 
-                    cache_filename = os.path.join(flannelfox.settings['files']['goodreadsCacheDir'],feedName+'.'+configFile)
+                    cacheFileName = os.path.join(flannelfox.settings['files']['goodreadsCacheDir'],feedName+'.'+configFile)
 
-                    if not os.path.exists(os.path.dirname(cache_filename)):
+                    if not os.path.exists(os.path.dirname(cacheFileName)):
                         try:
-                            os.makedirs(os.path.dirname(cache_filename))
+                            os.makedirs(os.path.dirname(cacheFileName))
                         except OSError as exc: # Guard against race condition
                             continue
 
@@ -687,19 +687,19 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                     }
 
                     params = {
-                        'key':goodreads_list.get("api_key", None)
+                        'key':goodreadsList.get("api_key", None)
                     }
       
                     # Get the feedType
                     try:
-                        feedType = unicode(goodreads_list.get("type",u"none").lower().strip())
+                        feedType = unicode(goodreadsList.get("type",u"none").lower().strip())
                     except (ValueError, KeyError) as e:
                         feedType = u"none"
                         continue
 
                     # Get the feedDestination
                     try:
-                        feedDestination = unicode(goodreads_list.get("feedDestination",u"").strip())
+                        feedDestination = unicode(goodreadsList.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
                         logger.warning("The feed has an invalid destination value")
@@ -707,8 +707,8 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
 
                     # Collect the feeds
                     try:
-                        if goodreads_list.get("minorFeeds",[]) is not None and len(goodreads_list.get("minorFeeds",[])) > 0:
-                            for minorFeed in goodreads_list.get("minorFeeds",[]):
+                        if goodreadsList.get("minorFeeds",[]) is not None and len(goodreadsList.get("minorFeeds",[])) > 0:
+                            for minorFeed in goodreadsList.get("minorFeeds",[]):
                                 url = unicode(minorFeed.get("url",u"").strip())
                                 minTime = int(minorFeed.get("minTime",u"0").strip()) # Hours Int
                                 minRatio = float(minorFeed.get("minRatio",u"0.0").strip()) # Ratio Float
@@ -718,19 +718,19 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cache_filename):
+                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
                         try:
-                            r = requests.get("{0}/user/show/{1}.xml".format(flannelfox.settings['apis']['goodreads'], goodreads_list["username"]), headers=headers, params=params, timeout=60)
+                            r = requests.get("{0}/user/show/{1}.xml".format(flannelfox.settings['apis']['goodreads'], goodreadsList["username"]), headers=headers, params=params, timeout=60)
                             httpResponse = r.status_code
 
                             if httpResponse == 200:
                                 # Parse the RSS XML and turn it into a json list
                                 xmldata = ET.fromstring(r.text)
                                 authors = xmldata.find('favorite_authors')
-                                goodreads_lits_results = []
+                                goodreadsListResults = []
 
                                 for item in authors.iter('author'):
                                     try:
@@ -739,7 +739,7 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                                         if author is not None and author != "":
                                             author = unicode(author.strip())
                                             author = author.replace(u" & ",u" and ")
-                                            goodreads_lits_results.append(author)
+                                            goodreadsListResults.append(author)
                                         else:
                                             continue
                                     except:
@@ -750,7 +750,7 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                             
                         except Exception as e:
                             logger.error("There was a problem fetching a goodreads list file: {0}".format(e))
-                            goodreads_list_results = []
+                            goodreadsListResults = []
                             httpResponse = -1
 
                         logger.error("Fetching goodreads list page: [{0}]".format(httpResponse))
@@ -758,15 +758,15 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cache_filename, data=json.dumps(goodreads_list_results))
+                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(goodreadsListResults))
                         else:
                             useCache = True
 
                     if useCache:
                         try:
-                            logger.debug("Reading cache file for [{0}]".format(cache_filename))
-                            with open(cache_filename) as cache:
-                                goodreads_list_results = json.load(cache)
+                            logger.debug("Reading cache file for [{0}]".format(cacheFileName))
+                            with open(cacheFileName) as cache:
+                                goodreadsListResults = json.load(cache)
                         except Exception as e:
                             logger.error("There was a problem reading a goodreads list cache file: {0}".format(e))
                             continue
@@ -775,20 +775,20 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                     try:
                         feedFilterList = []
 
-                        majorFeedFilters = goodreads_list.get("filters", [])
+                        majorFeedFilters = goodreadsList.get("filters", [])
 
                         for filterItem in majorFeedFilters:
 
                             # Loop through each author and append a filter for it
-                            for item in goodreads_list_results:
+                            for item in goodreadsListResults:
                                 ruleList = []
 
-                                if goodreads_list.get("like", False):
-                                    title_match_method = u"titleLike"
+                                if goodreadsList.get("like", False):
+                                    titleMatchMethod = u"titleLike"
                                 else:
-                                    title_match_method = u"title"
+                                    titleMatchMethod = u"title"
 
-                                ruleList.append({u"key":title_match_method, u"val":title, u"exclude":False})
+                                ruleList.append({u"key":titleMatchMethod, u"val":title, u"exclude":False})
                                 
                                 # Load the excludes
                                 for exclude in filterItem.get("exclude", []):
@@ -859,8 +859,8 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
 
             # Try to read in the rss lists
             try:
-                with open(os.path.join(configFolder,configFile)) as rss_json:
-                    RSS_LISTS = json.load(rss_json)
+                with open(os.path.join(configFolder,configFile)) as rssJson:
+                    RSS_LISTS = json.load(rssJson)
             except Exception as e:
                 logger.error("There was a problem reading the rss config file\n{0}".format(e))
                 continue
@@ -868,13 +868,13 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
             # Loop through the rss lists
             try:
 
-                for rss_list in RSS_LISTS:
-                    rss_list = rss_list.get("majorFeed")
+                for rssList in RSS_LISTS:
+                    rssList = rssList.get("majorFeed")
 
                     # Make sure our list at least has some basic parts
-                    if (rss_list.get("list_name", None) is None or
-                        rss_list.get("feedDestination", None) is None or
-                        rss_list.get("minorFeeds", None) is None):
+                    if (rssList.get("list_name", None) is None or
+                        rssList.get("feedDestination", None) is None or
+                        rssList.get("minorFeeds", None) is None):
                         continue
 
                     # Setup some variables for the feed
@@ -890,7 +890,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
 
                     # Get the feedName
                     try:
-                        feedName = unicode(rss_list.get("list_name",u"").lower().strip())
+                        feedName = unicode(rssList.get("list_name",u"").lower().strip())
                         if feedName == u"":
                             raise ValueError
                     except (ValueError, KeyError) as e:
@@ -903,14 +903,14 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
       
                     # Get the feedType
                     try:
-                        feedType = unicode(rss_list.get("type",u"none").lower().strip())
+                        feedType = unicode(rssList.get("type",u"none").lower().strip())
                     except (ValueError, KeyError) as e:
                         feedType = u"none"
                         continue
 
                     # Get the feedDestination
                     try:
-                        feedDestination = unicode(rss_list.get("feedDestination",u"").strip())
+                        feedDestination = unicode(rssList.get("feedDestination",u"").strip())
                         # TODO: Check if the location exists
                     except (ValueError, KeyError) as e:
                         logger.warning("The feed has an invalid destination value")
@@ -918,8 +918,8 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
 
                     # Collect the feeds
                     try:
-                        if rss_list.get("minorFeeds",[]) is not None and len(rss_list.get("minorFeeds",[])) > 0:
-                            for minorFeed in rss_list.get("minorFeeds",[]):
+                        if rssList.get("minorFeeds",[]) is not None and len(rssList.get("minorFeeds",[])) > 0:
+                            for minorFeed in rssList.get("minorFeeds",[]):
                                 url = unicode(minorFeed.get("url",u"").strip())
                                 minTime = int(minorFeed.get("minTime",u"0").strip()) # Hours Int
                                 minRatio = float(minorFeed.get("minRatio",u"0.0").strip()) # Ratio Float
@@ -933,7 +933,7 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                     try:
                         feedFilterList = []
 
-                        feedFilters = rss_list.get("filters", [])
+                        feedFilters = rssList.get("filters", [])
 
                         # Loop through each show and append a filter for it
                         for filterItem in feedFilters:
