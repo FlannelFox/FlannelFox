@@ -28,11 +28,11 @@ def check(folder,size=u'G'):
         # TODO: figure out how to measure used space in windows, This does not work
         if platform.system() == u'Windows':
             return 2000
-            free_bytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+            freeBytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
             ctypes.windll.kernel32.GetDisk
-            GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-            return free_bytes.value/divisor
+            GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
+            return freeBytes.value/divisor
         else:
         # TODO: Change this to walk the directory and add up the sizes, we want
         # this to be all python after all

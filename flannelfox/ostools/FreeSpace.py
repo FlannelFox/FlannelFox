@@ -25,9 +25,9 @@ def check(folder,size=u'G'):
 
     try:
         if platform.system() == u'Windows':
-            free_bytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-            return free_bytes.value/divisor
+            freeBytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
+            return freeBytes.value/divisor
         else:
             st = os.statvfs(folder)
             return st.f_bavail * st.f_frsize/divisor
