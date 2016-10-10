@@ -9,7 +9,7 @@
 # -*- coding: utf-8 -*-
 
 # System Includes
-import datetime, json, math, time, os
+import datetime, json, math, time, os, traceback
 import xml.etree.ElementTree as ET
 
 # Third party modules
@@ -724,26 +724,34 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                     if not useCache:
                         try:
                             r = requests.get("{0}/user/show/{1}.xml".format(flannelfox.settings['apis']['goodreads'], goodreadsList["username"]), headers=headers, params=params, timeout=60)
+                            logger.info(r.url)
                             httpResponse = r.status_code
 
                             if httpResponse == 200:
-                                # Parse the RSS XML and turn it into a json list
-                                xmldata = ET.fromstring(r.text)
-                                authors = xmldata.find('favorite_authors')
-                                goodreadsListResults = []
 
-                                for item in authors.iter('author'):
-                                    try:
-                                        author = item.find('name').text
+                                try:
+                                    # Parse the RSS XML and turn it into a json list
+                                    xmlData = changeCharset(r.text, "utf-8", "xml")
+                                    xmlData = ET.fromstring(xmlData)
+                                    xmlData = xmlData.find('user')
+                                    authors = xmlData.find('favorite_authors')
+                                    goodreadsListResults = []
 
-                                        if author is not None and author != "":
-                                            author = unicode(author.strip())
-                                            author = author.replace(u" & ",u" and ")
-                                            goodreadsListResults.append(author)
-                                        else:
+                                    for author in authors.iter('author'):
+                                        try:
+                                            name = author.find('name').text
+                                            logger.info("FOUND: {0}".format(name))
+
+                                            if name is not None and name != "":
+                                                name = unicode(name.strip())
+                                                name = name.replace(u" & ",u" and ")
+                                                goodreadsListResults.append(name)
+                                            else:
+                                                continue
+                                        except:
                                             continue
-                                    except:
-                                        continue
+                                except Exception as e:
+                                    logger.error("There was a problem reading the goodreads xml file:\n-   {0}\n-    {1}".format(e,traceback.format_exc()))    
 
                             else:
                                 logger.error("There was a problem fetching a goodreads list file: {0}".format(httpResponse))
@@ -896,10 +904,6 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
                     except (ValueError, KeyError) as e:
                         logger.warning("Feeds with out names are not permitted")
                         continue
-
-                    headers = {
-                        "user-agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.99 Safari/537.36",
-                    }
       
                     # Get the feedType
                     try:

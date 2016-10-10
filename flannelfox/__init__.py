@@ -49,8 +49,6 @@ class debuglevels(object):
         return cls.levelStrings[lvl]
 
 
-
-
 # Initial Setup, these must be at the top
 HOME_DIR = os.path.expanduser(ur'~')
 settings = {

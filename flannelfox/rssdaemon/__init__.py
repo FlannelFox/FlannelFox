@@ -243,6 +243,7 @@ def rssReader():
             results = []
             majorFeeds.update(Settings.readLastfmArtists())
             majorFeeds.update(Settings.readTraktTV())
+            majorFeeds.update(Settings.readGoodreads())
             majorFeeds.update(Settings.readRSS())
 
             # Holds all the torrents that are in the feeds, filtered, and new
