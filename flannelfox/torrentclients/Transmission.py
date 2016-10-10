@@ -34,13 +34,13 @@ TRANSMISSION_MAX_RETRIES = 3
 
 class Responses(object):
     success = u'success'
-    invalid_argument = u'invalid argument'
+    invalidArgument = u'invalid argument'
     duplicate = u'duplicate torrent'
-    bad_torrent = u'invalid or corrupt torrent file'
-    torrent_not_found = u'gotMetadataFromURL: http error 404: Not Found'
-    torrent_bad_request = u'gotMetadataFromURL: http error 400: Bad Request'
-    torrent_service_unavailable = u'gotMetadataFromURL: http error 503: Service Unavailable'
-    torrent_no_response = u"gotMetadataFromURL: http error 0: No Response"
+    badTorrent = u'invalid or corrupt torrent file'
+    torrentNotFound = u'gotMetadataFromURL: http error 404: Not Found'
+    torrentBadRequest = u'gotMetadataFromURL: http error 400: Bad Request'
+    torrentServiceUnavailable = u'gotMetadataFromURL: http error 503: Service Unavailable'
+    torrentNoResponse = u"gotMetadataFromURL: http error 0: No Response"
 
 
 class Client(object):
@@ -606,7 +606,7 @@ class Client(object):
             
             # If the call did not work then we are down to 
             # the last tracker so break out of the loop
-            if transmissionResponseCode == Responses.invalid_argument:
+            if transmissionResponseCode == Responses.invalidArgument:
                 break
 
             self.logger.debug("Tracker removed")
@@ -685,10 +685,10 @@ class Client(object):
             # trying to add a torrent
 
             if (transmissionResponseCode in [
-                        Responses.torrent_not_found,
-                        Responses.torrent_bad_request,
-                        Responses.torrent_service_unavailable,
-                        Responses.torrent_no_response
+                        Responses.torrentNotFound,
+                        Responses.torrentBadRequest,
+                        Responses.torrentServiceUnavailable,
+                        Responses.torrentNoResponse
                     ]
                 ):
                 # Torrent is broken so lets delete it from the DB, this leaves the opportunity
@@ -698,8 +698,8 @@ class Client(object):
 
 
             elif (transmissionResponseCode in [
-                        Responses.bad_torrent,
-                        Responses.torrent_not_found
+                        Responses.badTorrent,
+                        Responses.torrentNotFound
                     ]
                 ):
                 self.logger.info("Torrent is bad, so let's blacklist it")
