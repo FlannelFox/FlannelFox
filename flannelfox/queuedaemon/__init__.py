@@ -34,26 +34,16 @@ TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
 # Setup the logger.agent
 logger = logging.getLogger(__name__)
 
-def queueReader():
+def __queueReader():
     '''
     Connects to the rpc daemon and attempts to manange the queue
 
     Steps:
         Update queue list
         Checks for freespace on feedDestinations
-        TODO: Checks for torrent errors and attempts to fix them
-        TODO: Get list of torrents that have met seeding requirements
-
-        TODO: if len(seeding torrents) > flannelfox.settings['queueManagement']['maxTorrents']:
-            Stop (len(seeding torrents) - flannelfox.settings['queueManagement']['maxTorrents']) torrents
-
-        TODO: if flannelfox.settings['queueManagement']['strictQueueManagement']:
-            Remove all torrents that have met seeding requirements
-
-        TODO: Get list of queued torrents, up to flannelfox.settings['queueManagement']['maxDownloadingTorrents'] (x)
-            for each queued torrent:
-                remove seeding torrent
-                add new torrents
+        Checks to see if torrents need to be stopped so new ones can be added
+        Check for strict queue management and stop finished torrents if enabled
+        Checks for broken torrents and removes them
     '''
     logger.info('QueueDaemon Started')
 
@@ -283,7 +273,7 @@ def main():
         while True:
         
             try:
-                queueReader()
+                __queueReader()
 
             except KeyboardInterrupt as e:
                 logger.warning("Application Aborted")
