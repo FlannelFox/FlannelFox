@@ -220,7 +220,7 @@ def __rssThread(majorFeed):
     return (pid, rssTorrents, error, processed)
 
 
-def rssReader():
+def __rssReader():
     '''
     This thread will take care of Processing RSS Feeds
     '''
@@ -347,14 +347,14 @@ def rssReader():
             time.sleep(flannelfox.settings['rssDaemonThreadSleep'])
 
     except Exception as e:
-        logger.error(u"ERROR: RSSReader Failed {0} {1}\n-  {2}".format(
+        logger.error(u"ERROR: __rssReader Failed {0} {1}\n-  {2}".format(
             strftime("%Y-%m-%d %H:%M:%S", gmtime()),
             e, 
             traceback.format_exc())
         )
 
     except:
-        logger.error(u"ERROR: RSSReader Failed {0}\n-  {1}".format(
+        logger.error(u"ERROR: __rssReader Failed {0}\n-  {1}".format(
             strftime("%Y-%m-%d %H:%M:%S", gmtime()), 
             traceback.format_exc())
         )
@@ -375,8 +375,8 @@ def main():
 
         while True:
             try:
-                logger.critical("RSSReader Started")
-                rssReader()
+                logger.critical("__rssReader Started")
+                __rssReader()
 
             except KeyboardInterrupt as e:
                 logger.critical(u"Application Aborted")
