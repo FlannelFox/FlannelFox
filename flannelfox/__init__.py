@@ -8,6 +8,17 @@
 import os, json
 
 class debuglevels(object):
+    '''
+    This is a class that allows for easy and reliable access to the debug level
+    the user would like to use as specified in the config file.
+
+    Usage:
+    import debuglevels from flannelfox
+    debuglevels.getLevel()
+
+
+    '''
+
     CRITICAL=50
     ERROR=40
     WARNING=30
@@ -38,6 +49,9 @@ class debuglevels(object):
 
     @classmethod
     def __sanitizeLevel(cls, lvl="NOTSET"):
+        '''
+        Makes sure the level returned is consistent
+        '''
         if lvl == "":
             lvl="NOTSET"
         return lvl.upper()

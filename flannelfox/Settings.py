@@ -111,7 +111,15 @@ FUZZY_PROPERTIES = [
 
 
 def changeCharset(data, charset="utf-8", type="xml"):
+    '''
+    Used to change the character set of a string to the desired format
 
+    data: The text to be converted
+    charset: The format the text should be returned in
+    type: The engine to be used to convert the charset
+
+    Returns the text after converted
+    '''
     logger = logging.getLogger(__name__)
     logger.debug("Tyring to convert {0} to {1}".format(charset, type))
 
@@ -128,7 +136,14 @@ def changeCharset(data, charset="utf-8", type="xml"):
     return data
 
 
-def modificationDate(filename):
+def __modificationDate(filename):
+    '''
+    Checks the modification time of the file it is given
+
+    filename: The full path of the file to return the timestamp of.
+
+    Returns the timestamp in seconds since epoch
+    '''
     logger = logging.getLogger(__name__)
     try:
         return int(datetime.datetime.fromtimestamp(os.path.getmtime(filename)).strftime("%s"))
@@ -137,16 +152,25 @@ def modificationDate(filename):
         return -1
 
 
-def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
+def __isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
+    '''
+    Used to determine if a cachefile needs to be updated
+
+    force: force an update
+    cacheFilename: The full path of the file to check
+    frequency: how often the file should be updated in minutes
+
+    Returns Boolean
+    '''
     logger = logging.getLogger(__name__)
     try:
         # Get the modification time
-        lastModified = modificationDate(cacheFilename)
+        lastModified = __modificationDate(cacheFilename)
 
         if lastModified == -1:
             return True
 
-        logger.debug("Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60)))    )
+        logger.debug("Checking cache: {0} {1}:{2}".format(cacheFilename, frequency, math.ceil((time.time()/60 - lastModified/60))))
         difference = math.ceil((time.time()/60 - lastModified/60))
         if difference >= frequency:
             logger.debug("Cache update needed".format(cacheFilename) )
@@ -160,7 +184,7 @@ def isCacheUpdateNeeded(force=False, cacheFilename=None, frequency=360):
 
 
 
-def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
+def __updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
     '''
     Used to update cache files for api calls. This is needed so we do not keep
     asking the api servers for the same information on a frequent basis. The
@@ -174,7 +198,7 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
     logger = logging.getLogger(__name__)
 
     try:
-        if isCacheUpdateNeeded(cacheFilename=cacheFilename, frequency=frequency):
+        if __isCacheUpdateNeeded(cacheFilename=cacheFilename, frequency=frequency):
             logger.debug("Cache update for {0} needed".format(cacheFilename))
             with open(cacheFilename, 'w') as cache:
                 cache.write(data)
@@ -187,6 +211,11 @@ def updateCacheFile(force=False, cacheFilename=None, data=None, frequency=360):
 
 
 def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir']):
+    '''
+    Read the artists from a users lastfm library.
+    Creates a cachefile for the artists and updates it when needed
+    Returns a list of artists we want to look for
+    '''
     logger = logging.getLogger(__name__)
     majorFeeds = {}
 
@@ -282,7 +311,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
+                    if not __isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
@@ -322,7 +351,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(artists))
+                            __updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(artists))
                         else:
                             useCache = True
 
@@ -385,7 +414,7 @@ def readLastfmArtists(configFolder=flannelfox.settings['files']['lastfmConfigDir
 
 def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
     '''
-    Reads the tv I want from the trakt.tv api
+    Reads the titles and other information from a specified trakt.tv list
     Content-Type:application/json
     trakt-api-version:2
     trakt-api-key:XXXX
@@ -495,7 +524,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
+                    if not __isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
@@ -518,7 +547,7 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(traktListResults))
+                            __updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(traktListResults))
                         else:
                             useCache = True
 
@@ -611,7 +640,9 @@ def readTraktTV(configFolder=flannelfox.settings['files']['traktConfigDir']):
 
 def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir']):
     '''
-    Get the authors I like from goodreads
+    Read the authors a user favorites on GoodReads
+    Creates a cachefile for the authors and updates it when needed
+    Returns a list of authors we want to look for
     '''
 
     logger = logging.getLogger(__name__)
@@ -718,13 +749,12 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                         logger.warning("The feed contains an invalid minorFeed:\n{0}".format(e))
                         continue
 
-                    if not isCacheUpdateNeeded(cacheFilename=cacheFileName):
+                    if not __isCacheUpdateNeeded(cacheFilename=cacheFileName):
                         useCache = True
 
                     if not useCache:
                         try:
                             r = requests.get("{0}/user/show/{1}.xml".format(flannelfox.settings['apis']['goodreads'], goodreadsList["username"]), headers=headers, params=params, timeout=60)
-                            logger.info(r.url)
                             httpResponse = r.status_code
 
                             if httpResponse == 200:
@@ -740,7 +770,6 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                                     for author in authors.iter('author'):
                                         try:
                                             name = author.find('name').text
-                                            logger.info("FOUND: {0}".format(name))
 
                                             if name is not None and name != "":
                                                 name = unicode(name.strip())
@@ -766,7 +795,7 @@ def readGoodreads(configFolder=flannelfox.settings['files']['goodreadsConfigDir'
                         # If we are able to get a list then cache it
                         # TODO: See if Last-Modified can be added to save this step when possible
                         if httpResponse == 200:
-                            updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(goodreadsListResults))
+                            __updateCacheFile(cacheFilename=cacheFileName, data=json.dumps(goodreadsListResults))
                         else:
                             useCache = True
 
@@ -843,8 +872,6 @@ def readRSS(configFolder=flannelfox.settings['files']['rssConfigDir']):
 
     Takes the location of the config file as a parameter
     Returns a dict of filters to match torrents with
-
-    TODO: Convert this feed from XML to JSON
     '''
     logger = logging.getLogger(__name__)
 
