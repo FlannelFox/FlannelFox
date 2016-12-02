@@ -135,7 +135,7 @@ def parseTitle(title):
                 videoProperties["title"] = videoProperties["title"].replace(ch, u'')
 
         if "tvTitleMappings" in flannelfox.settings:
-            videoProperties["title"] = unicode(flannelfox.settings['tvTitleMappings'].get(videoProperties["title"], videoProperties["title"]))
+            videoProperties["title"] = unicode(flannelfox.settings['tvTitleMappings'].get(videoProperties["title"],lower(), videoProperties["title"]))
 
     if "episode" in parsedData.groupdict():
         if multiData: # if there is multiple episodes then collapse them into a single csv
