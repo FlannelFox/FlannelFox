@@ -89,61 +89,61 @@ Keywords are how the application knows what you want it to grab for you. You can
 * season - matches a season number to the data extracted from the torrent name.
 * episode - matches an episode number to the data extracted from the torrent name.
 * quality - matches a specific quality to the data extracted from the torrent name.
-    * 480p
-    * 480i
-    * 576p
-    * 576i
-    * 720p
-    * 720i
-    * 1080p
-    * 1080i
-    * sd
+	* 480p
+	* 480i
+	* 576p
+	* 576i
+	* 720p
+	* 720i
+	* 1080p
+	* 1080i
+	* sd
 * codec - matches a specific codec to the data extracted from the torrent name.
-    * xvid
-    * divx
-    * dvdr
-    * h264
-    * vc-1
-    * wmv
-    * x264-hi10p
-    * x264
-    * bd
-    * mpeg2
+	* xvid
+	* divx
+	* dvdr
+	* h264
+	* vc-1
+	* wmv
+	* x264-hi10p
+	* x264
+	* bd
+	* mpeg2
 * container - matches a specific container to the data extracted from the torrent name.
-    * mp4
-    * vob
-    * mpeg
-    * iso
-    * wmv
-    * m4v
-    * m2ts
-    * avi
-    * ts
-    * mkv
+	* mp4
+	* vob
+	* mpeg
+	* iso
+	* wmv
+	* m4v
+	* m2ts
+	* avi
+	* ts
+	* mkv
 * source - matches a specific source type to the data extracted from the torrent name.
-    * dsr
-    * dvdrip
-    * tvrip
-    * vhsrip
-    * bluray
-    * bdrip
-    * brrip
-    * dvd5
-    * dvd9
-    * hddvd
-    * webdl
-    * webrip
-    * bd5
-    * bd9
-    * bd25
-    * bd50
-    * hdtv
-    * pdtv
+	* dsr
+	* dvdrip
+	* tvrip
+	* vhsrip
+	* bluray
+	* bdrip
+	* brrip
+	* dvd5
+	* dvd9
+	* hddvd
+	* webdl
+	* webrip
+	* bd5
+	* bd9
+	* bd25
+	* bd50
+	* hdtv
+	* pdtv
 
 
 ## Movie
 Movies have many of the same filters as TV with a couple of exceptions; episode and season flags are not valid and a new flag called year is added.
-    * year - matches a specific year to the data extracted from the torrent name.
+	* year - matches a specific year to the data extracted from the torrent name.
 
 
 ## Music
@@ -152,50 +152,50 @@ Movies have many of the same filters as TV with a couple of exceptions; episode 
 * title - matches an exact title to the data extracted from the torrent name.
 * titleLike - performs a partial match to the data extracted from the torrent name.
 * quality
-    * apsvbr
-    * apxvbr
-    * v0vbr
-    * v1vbr
-    * v2vbr
-    * v8vbr
-    * 128
-    * 192
-    * 256
-    * 320
-    * 24bit lossless
-    * lossless
+	* apsvbr
+	* apxvbr
+	* v0vbr
+	* v1vbr
+	* v2vbr
+	* v8vbr
+	* 128
+	* 192
+	* 256
+	* 320
+	* 24bit lossless
+	* lossless
 * releaseType
-    * album
-    * soundtrack
-    * ep
-    * anthology
-    * compilation
-    * dj mix
-    * single
-    * live album
-    * remix
-    * bootleg
-    * interview
-    * mixtape
-    * unknown
-    * concert recording
-    * demo
+	* album
+	* soundtrack
+	* ep
+	* anthology
+	* compilation
+	* dj mix
+	* single
+	* live album
+	* remix
+	* bootleg
+	* interview
+	* mixtape
+	* unknown
+	* concert recording
+	* demo
 * codec
-    * aac
-    * ac3
-    * dts
-    * mp3
-    * flac
+	* aac
+	* ac3
+	* dts
+	* mp3
+	* flac
 * source
-    * cd
-    * dvd
-    * vinyl
-    * soundboard
-    * sacd
-    * dat
-    * cassette
-    * webdl
-    * bluray
+	* cd
+	* dvd
+	* vinyl
+	* soundboard
+	* sacd
+	* dat
+	* cassette
+	* webdl
+	* bluray
 
 
 ## Other
@@ -208,66 +208,64 @@ This is achieved by leaving the type section empty ""
 ## Example config files
 ---------------
 * Custom Config
-    * [Get only the first five (5) episodes of a new series' first season.](#get-only-the-first-five-5-episodes-of-a-new-series-first-season)
-    * [Get only shows with the word "Boogieman" in the title that are 720p quality and mkv container](#get-only-shows-with-the-word-boogieman-in-the-title-that-are-720p-quality-and-mkv-container)
-    * [Get a show called fakeworld but do not match the aftershow episode](#get-a-show-called-fakeworld-but-do-not-match-the-aftershow-episode)
+	* [Get only the first five (5) episodes of a new series' first season.](#get-only-the-first-five-5-episodes-of-a-new-series-first-season)
+	* [Get only shows with the word "Boogieman" in the title that are 720p quality and mkv container](#get-only-shows-with-the-word-boogieman-in-the-title-that-are-720p-quality-and-mkv-container)
+	* [Get a show called fakeworld but do not match the aftershow episode](#get-a-show-called-fakeworld-but-do-not-match-the-aftershow-episode)
 * Trakt.TV
-    * [List monitoring config file to monitor a list called "your-list-name" and auto pull shows that are 720p quality and match the titles in the list.](#list-monitoring-config-file-to-monitor-a-list-called-your-list-name-and-auto-pull-shows-that-are-720p-quality-and-match-the-titles-in-the-list)
-    * [List monitoring config file to monitor a list called "your-list-name-partial" and auto pull shows that are 720p quality and paritally match the title.](#list-monitoring-config-file-to-monitor-a-list-called-your-list-name-partial-and-auto-pull-shows-that-are-720p-quality-and-paritally-match-the-title)
+	* [List monitoring config file to monitor a list called "your-list-name" and auto pull shows that are 720p quality and match the titles in the list.](#list-monitoring-config-file-to-monitor-a-list-called-your-list-name-and-auto-pull-shows-that-are-720p-quality-and-match-the-titles-in-the-list)
+	* [List monitoring config file to monitor a list called "your-list-name-partial" and auto pull shows that are 720p quality and paritally match the title.](#list-monitoring-config-file-to-monitor-a-list-called-your-list-name-partial-and-auto-pull-shows-that-are-720p-quality-and-paritally-match-the-title)
 * Last.FM
-    * [Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.](#library-monitoring-config-file-to-grab-all-releases-that-match-your-library-that-are-mp3v0vbr-and-the-source-is-a-cd)
+	* [Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.](#library-monitoring-config-file-to-grab-all-releases-that-match-your-library-that-are-mp3v0vbr-and-the-source-is-a-cd)
 
 
 ### Custom Config
 #### Get only the first five (5) episodes of a new series' first season.
 ```
 [
-    {
-        "majorFeed": {
-            "list_name":"Somesite TV",
-            "type": "tv",
-            "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
-            "minorFeeds": [
-                {
-                    "url":"http://somesite.com/rss",
-                    "minRatio": "1.5",
-                    "minTime": "24"
-                }
-            ],
-            "filters":[
-                {
-                    "include":[
-                        {"season": "1"},
-                        {"episode": "1"}
-                    ]
-                },
-                {
-                    "include":[
-                        {"season": "1"},
-                        {"episode": "2"}
-                    ]
-                },
-                {
-                    "include":[
-                        {"season": "1"},
-                        {"episode": "3"}
-                    ]
-                },
-                {
-                    "include":[
-                        {"season": "1"},
-                        {"episode": "4"}
-                    ]
-                },
-                {
-                    "include":[
-                        {"season": "1"},
-                        {"episode": "5"}
-                    ]
-                }
-            ]
-        }
-    }
+	{
+		"list_name":"Somesite TV",
+		"type": "tv",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+		"minorFeeds": [
+			{
+				"url":"http://somesite.com/rss",
+				"minRatio": "1.5",
+				"minTime": "24"
+			}
+		],
+		"filters":[
+			{
+				"include":[
+					{ "season": "1" },
+					{ "episode": "1" }
+				]
+			},
+			{
+				"include":[
+					{ "season": "1" },
+					{ "episode": "2" }
+				]
+			},
+			{
+				"include":[
+					{ "season": "1" },
+					{ "episode": "3" }
+				]
+			},
+			{
+				"include":[
+					{ "season": "1" },
+					{ "episode": "4" }
+				]
+			},
+			{
+				"include":[
+					{ "season": "1" },
+					{ "episode": "5" }
+				]
+			}
+		]
+	}
 ]
 
 ```
@@ -276,29 +274,27 @@ This is achieved by leaving the type section empty ""
 #### Get only shows with the word "Boogieman" in the title that are 720p quality and mkv container
 ```
 [
-    {
-        "majorFeed": {
-            "list_name":"Somesite TV",
-            "type": "tv",
-            "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
-            "minorFeeds": [
-                {
-                    "url":"http://somesite.com/rss",
-                    "minRatio": "1.5",
-                    "minTime": "24"
-                }
-            ],
-            "filters":[
-                {
-                    "include":[
-                        {"title": "Boogieman"},
-                        {"quality": "720p"},
-                        {"container": "mkv"}
-                    ]
-                }
-            ]
-        }
-    }
+	{
+		"list_name":"Somesite TV",
+		"type": "tv",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+		"minorFeeds": [
+			{
+				"url":"http://somesite.com/rss",
+				"minRatio": "1.5",
+				"minTime": "24"
+			}
+		],
+		"filters":[
+			{
+				"include":[
+					{ "title": "Boogieman" },
+					{ "quality": "720p" },
+					{ "container": "mkv" }
+				]
+			}
+		]
+	}
 ]
 
 ```
@@ -307,32 +303,30 @@ This is achieved by leaving the type section empty ""
 #### Get a show called fakeworld but do not match the aftershow episode
 ```
 [
-    {
-        "majorFeed": {
-            "list_name":"Somesite TV",
-            "type": "tv",
-            "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
-            "minorFeeds": [
-                {
-                    "url":"http://somesite.com/rss",
-                    "minRatio": "1.5",
-                    "minTime": "24"
-                }
-            ],
-            "filters":[
-                {
-                    "exclude":[
-                        {"wordMatch": "aftershow"}
-                    ],
-                    "include":[
-                        {"title": "fakeworld"},
-                        {"quality": "720p"},
-                        {"container": "mkv"}
-                    ]
-                }
-            ]
-        }
-    }
+	{
+		"list_name":"Somesite TV",
+		"type": "tv",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+		"minorFeeds": [
+			{
+				"url":"http://somesite.com/rss",
+				"minRatio": "1.5",
+				"minTime": "24"
+			}
+		],
+		"filters":[
+			{
+				"exclude":[
+					{ "wordMatch": "aftershow" }
+				],
+				"include":[
+					{ "title": "fakeworld" },
+					{ "quality": "720p" },
+					{ "container": "mkv" }
+				]
+			}
+		]
+	}
 ]
 
 ```
@@ -341,79 +335,76 @@ This is achieved by leaving the type section empty ""
 #### List monitoring config file to monitor a list called "your-list-name" and auto pull shows that are 720p quality and match the titles in the list.
 ```
 [
-  {
-    "username": "trakt-user-name",
-    "api_key": "",
-    "list_name": "your-list-name",
-    "type": "tv",
-    "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
-    "minorFeeds": [
-      {
-        "url": "http://site.com/rss",
-        "minTime": "24",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss",
-        "minTime": "72",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss?somefiler=1",
-        "minTime": "24",
-        "minRatio": "1.5"
-      }
-    ],
-    "filters": [
-      {
-        "include": [
-          {
-            "quality": "720p"
-          }
-        ]
-      }
-    }
-  }
+	{
+		"username": "trakt-user-name",
+		"api_key": "",
+		"list_name": "your-list-name",
+		"type": "tv",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+		"minorFeeds": [
+			{
+				"url": "http://site.com/rss",
+				"minTime": "24",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss",
+				"minTime": "72",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss?somefiler=1",
+				"minTime": "24",
+				"minRatio": "1.5"
+			}
+		],
+		"filters": [
+			{
+				"include": [
+					{ "quality": "720p" }
+				]
+			}
+		]
+	}
+]
 ```
 
 
 #### List monitoring config file to monitor a list called "your-list-name-partial" and auto pull shows that are 720p quality and paritally match the title.
 ```
 [
-  {
-    "username": "trakt-user-name",
-    "api_key": "",
-    "list_name": "your-list-name",
-    "type": "tv",
-    "feedDestination": "###DOWNLOAD_DIR###/finished/tv",
-    "like": true,
-    "minorFeeds": [
-      {
-        "url": "http://site.com/rss",
-        "minTime": "24",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss",
-        "minTime": "72",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss?somefiler=1",
-        "minTime": "24",
-        "minRatio": "1.5"
-      }
-    ],
-    "filters": [
-      {
-        "include": [
-          {
-            "quality": "720p"
-          }
-        ]
-      }
-    ]
-  }
+	{
+		"username": "trakt-user-name",
+		"api_key": "",
+		"list_name": "your-list-name",
+		"type": "tv",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/tv",
+		"like": true,
+		"minorFeeds": [
+			{
+				"url": "http://site.com/rss",
+				"minTime": "24",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss",
+				"minTime": "72",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss?somefiler=1",
+				"minTime": "24",
+				"minRatio": "1.5"
+			}
+		],
+		"filters": [
+			{
+				"include": [
+					{ "quality": "720p" }
+				]
+			}
+		]
+	}
 ]
 ```
 
@@ -422,41 +413,41 @@ This is achieved by leaving the type section empty ""
 #### Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.
 ```
 [
-  {
-    "username": "last-fm-user-name",
-    "api_key": "",
-    "list_name": "your-list-name",
-    "type": "music",
-    "feedDestination": "###DOWNLOAD_DIR###/finished/music",
-    "minorFeeds": [
-      {
-        "url": "http://site.com/rss",
-        "minTime": "24",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss",
-        "minTime": "72",
-        "minRatio": "1.5"
-      },
-      {
-        "url": "http://site2.com/rss?somefiler=1",
-        "minTime": "24",
-        "minRatio": "1.5"
-      }
-    ],
-    "filters": [
-      {
-        "exclude": [
-          {"wordMatch": "scene"}
-        ],
-        "include": [
-          {"source": "cd"},
-          {"quality": "v0vbr"},
-          {"codec": "mp3"}
-        ]
-      }
-    ]
-  }
+	{
+		"username": "last-fm-user-name",
+		"api_key": "",
+		"list_name": "your-list-name",
+		"type": "music",
+		"feedDestination": "###DOWNLOAD_DIR###/finished/music",
+		"minorFeeds": [
+			{
+				"url": "http://site.com/rss",
+				"minTime": "24",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss",
+				"minTime": "72",
+				"minRatio": "1.5"
+			},
+			{
+				"url": "http://site2.com/rss?somefiler=1",
+				"minTime": "24",
+				"minRatio": "1.5"
+			}
+		],
+		"filters": [
+			{
+				"exclude": [
+					{ "wordMatch": "scene" }
+				],
+				"include": [
+					{ "source": "cd" },
+					{ "quality": "v0vbr" },
+					{ "codec": "mp3" }
+				]
+			}
+		]
+	}
 ]
 ```
