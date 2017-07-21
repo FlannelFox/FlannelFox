@@ -7,38 +7,39 @@
 # -*- coding: utf-8 -*-
 
 # flannelfox Includes
-from flannelfox.torrenttools import Torrents
 from flannelfox.databases import Databases
-from flannelfox import Settings
-import flannelfox
+from flannelfox.settings import settings
 
-# Setup the database object
-TorrentDB = Databases(flannelfox.settings['database']['defaultDatabaseEngine'])
-
-class Queue(object):
+class Queue():
     '''
     Used to Track a list of torrents and interact with the torrent database
     '''
 
+    # Setup the database object
+    database = None
+    defaultDatabaseType = settings['database']['defaultDatabaseEngine']
+
 
     def __init__(self, *args):
         self.elements = list(*args)
+        self.database = Databases(
+            dbType = self.defaultDatabaseType
+        )
 
 
-    def __getitem__(self,idx):
-
+    def __getitem__(self, idx):
         # Ensure the index is in the correct range
         if idx < 0 or idx >= len(self.elements):
-            raise IndexError(ur'Index out of range')
+            raise IndexError('Index out of range')
 
         return self.elements[idx]
 
 
-    def __setitem__(self,idx, val):
-        self.elements[idx] = val
+    def __setitem__(self, idx, torrent):
+        self.elements[idx] = torrent
 
         # Ensure the value was taken
-        if self.elements[idx] == val:
+        if self.elements[idx] == torrent:
             return 0
         else:
             return -1
@@ -52,41 +53,51 @@ class Queue(object):
         return iter(self.elements)
 
 
-    def __contains__(self,element):
+    def __contains__(self, element):
         return element in self.elements
 
 
-    def append(self, val):
+    def databaseTorrentExists(self, torrent):
+        return self.database.torrentExists(torrent=torrent)
+        #return False
+
+
+    def databaseTorrentBlacklisted(self, torrent):
+        return self.database.torrentBlacklisted(torrent.get('url',''))
+        #return False
+
+
+    def append(self, torrent):
 
         # Check and see if the value already exists in elements
-        if val in self.elements:
+        if torrent in self.elements:
             return -1
 
         # Check and see if the value already exists in DB
-        elif TorrentDB.torrentExists(torrent=val):
+        elif self.databaseTorrentExists(torrent):
             return -1
 
         # Ensure it is not Blacklisted
-        elif TorrentDB.torrentBlacklisted(val.get('url','')):
+        elif self.databaseTorrentBlacklisted(torrent):
             return -1
 
         # Append the value to elements
         else:
-            self.elements.append(val)
+            self.elements.append(torrent)
 
             # Ensure the value was taken
-            if val in self.elements:
+            if torrent in self.elements:
                 return 0
             else:
                 return -1
 
 
     def writeToDB(self):
-        TorrentDB.addTorrentsToQueue(self.elements)
+        self.database.addTorrentsToQueue(self.elements)
 
 
     def __str__(self):
-        out = ur''
+        out = ''
         for element in self.elements:
             out += u'{0}\n'.format(element)
         return out

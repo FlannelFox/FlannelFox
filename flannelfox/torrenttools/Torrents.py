@@ -7,34 +7,37 @@
 # -*- coding: utf-8 -*-
 
 # System Includes
-import re, HTMLParser
+import re, html
+
 
 # flannelfox Include
-from flannelfox import Settings
+from flannelfox import settings
 
 # SceneTools Include
 import flannelfox.scenetools.TV
 import flannelfox.scenetools.Movie
 import flannelfox.scenetools.Music
-from flannelfox.scenetools import VideoProperties
+import flannelfox.scenetools.Ebook
 
 
-class Generic(object):
+class Generic():
     '''
     Basic Torrent Object
     '''
 
+    elements = {}
 
-    def __init__(self, torrentTitle, url=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
-        if not isinstance(torrentTitle, unicode):
+
+    def __init__(self, torrentTitle, url=None, minTime=0, minRatio=0.0, comparison='or', feedDestination=None):
+        if not isinstance(torrentTitle, str):
             raise AttributeError(u'torrentTitle must be a string:\n{0}'.format(torrentTitle))
 
         self.elements = {}
 
         # Let's make sure double quotes are escaped
-        self.elements['torrentType'] = u'none'
-        self.elements['torrentTitle'] = torrentTitle.replace(u'"', u'')
-        self.elements['title'] = torrentTitle.replace(u'"', u'').lower()
+        self.elements['torrentType'] = 'none'
+        self.elements['torrentTitle'] = torrentTitle.replace('"', '')
+        self.elements['title'] = torrentTitle.replace('"', '').lower()
         self.elements['minTime'] = minTime
         self.elements['minRatio'] = minRatio
         self.elements['comparison'] = comparison
@@ -42,6 +45,8 @@ class Generic(object):
 
         if url is not None:
             self.elements['url'] = url
+
+        self.populateProperties(self.elements)
 
 
     def __getitem__(self, key):
@@ -68,23 +73,15 @@ class Generic(object):
 
 
     def __iter__(self):
-        return self.iterkeys()
+        return self.elements.iter()
 
 
     def __contains__(self, element):
         return element in self.elements
 
 
-    def __unicode__(self):
-        output = u'========================================\n'
-        for key, val in self.elements.iteritems():
-            output += u'= {0}: [{1}]\n'.format(unicode(key), unicode(val))
-        output += u'========================================\n'
-        return output
-
-
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return str(self.elements)
 
 
     def __eq__(self, other):
@@ -92,8 +89,8 @@ class Generic(object):
         Test if two torrents are the same or not
         '''
 
-        for key, val in other.iteritems():
-            if key in Settings.FUZZY_PROPERTIES:
+        for key, val in other.items():
+            if key in settings.FUZZY_PROPERTIES:
                 continue
             elif key not in self.elements or self.elements[key] != val:
                 return False
@@ -103,19 +100,19 @@ class Generic(object):
     def get(self, key, default=None):
         try:
             return self.__getitem__(key)
-        except:
+        except Exception:
             return default
 
-    def iteritems(self):
-        return self.elements.iteritems()
+    def items(self):
+        return self.elements.items()
 
 
-    def iterkeys(self):
-        return self.elements.iterkeys()
+    def keys(self):
+        return self.elements.keys()
 
 
-    def itervalues(self):
-        return self.elements.itervalues()
+    def values(self):
+        return self.elements.values()
 
 
     def filterMatch(self, currentFilters):
@@ -129,7 +126,6 @@ class Generic(object):
         if currentFilters is None or len(currentFilters) < 1:
             return True
 
-        # Check each ruleset to see if one of them matches
         for currentFilterList in currentFilters:
 
             # Tracks if the torrent makes a complete match with one of the rule
@@ -139,35 +135,43 @@ class Generic(object):
             # Check each rule in the set
             for f in currentFilterList:
                 # Extract the key, value, and exclude option from data
-                key = unicode(f["key"])
-                val = unicode(f["val"])
+                key = f["key"]
+                val = f["val"]
                 exclude = f["exclude"]
-                
-                if key == u'wordMatch':
+
+                if key == 'wordMatch':
                     if val.lower() in self.elements.get('torrentTitle', None).lower():
                         if exclude == True:
                             doesMatch.append(False)
+
                     else:
                         if exclude == False:
                             doesMatch.append(False)
-                elif key == u'wordMatchStrict':
+
+                elif key == 'wordMatchStrict':
                     if val in self.elements.get('torrentTitle', None):
                         if exclude == True:
                             doesMatch.append(False)
+
                     else:
                         if exclude == False:
                             doesMatch.append(False)
-                elif key == u'titleLike':
+
+                elif key == 'titleLike':
                     if val.lower() in self.elements.get('title', None).lower():
                         if exclude == True:
                             doesMatch.append(False)
+
                     else:
                         if exclude == False:
                             doesMatch.append(False)
+
                 elif key not in self.elements:
                     doesMatch.append(False)
+
                 elif val != self.elements.get(key, None) and exclude == False:
                     doesMatch.append(False)
+
                 elif val == self.elements.get(key, None) and exclude == True:
                     doesMatch.append(False)
 
@@ -181,25 +185,26 @@ class Generic(object):
         '''
         Check the parsed data, if valid then populate the properties of the torrent
         '''
-        if parsedData is None:
-            raise TypeError(u'The Title given does not appear to be of type: {0}\n{1}'.format(self.elements['torrentType'],self.elements['torrentTitle']))
 
-	# Clean out special characters and things that could cause an issue
-        for key, val in parsedData.iteritems():
+        if parsedData is None:
+            raise TypeError('The Title given does not appear to be of type: {0}\n{1}'.format(self.elements['torrentType'],self.elements['torrentTitle']))
+
+	    # Clean out special characters and things that could cause an issue
+        for key, val in parsedData.items():
 
             # Fix title entries
-            if key == u'title':
+            if key == 'title':
 
                 # Normalize and, AND, &, ...
-                val = re.sub(ur' & ', ur' and ', val, flags=re.IGNORECASE)
+                val = re.sub(r'&', r'and', val, flags=re.IGNORECASE)
 
                 # Clean out HTML entities
-                htmlParser = HTMLParser.HTMLParser()
-                val = htmlParser.unescape(val)
+                val = html.unescape(val)
 
                 # Clean out unneeded punctuation
-                for ch in [u':', u'\\', u'\'', u',']:
-                    val = val.replace(ch, u'')
+                val = val.replace('.',' ')
+                for ch in (':', '\\', '\'', ','):
+                    val = val.replace(ch, '')
 
             self.elements[key] = val
 
@@ -209,17 +214,17 @@ class Music(Generic):
     Torrent Object Specified to Music
     '''
 
-    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
+    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison='or', feedDestination=None):
         if metaData is None:
             super(Music, self).__init__(torrentTitle, url, minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-            self.elements['torrentType'] = u'music'
+            self.elements['torrentType'] = 'music'
 
             # Try to get metadata DICT
             metaData = flannelfox.scenetools.Music.parseTitle(self.elements['title'])
 
         else:
            super(Music, self).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-           self.elements['torrentType'] = u'music'
+           self.elements['torrentType'] = 'music'
 
         self.populateProperties(metaData)
 
@@ -229,17 +234,17 @@ class TV(Generic):
     Torrent Object Specific to TV Shows
     '''
 
-    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
+    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison='or', feedDestination=None):
         if metaData is None:
             super(TV, self).__init__(torrentTitle, url, minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-            self.elements['torrentType'] = u'tv'
+            self.elements['torrentType'] = 'tv'
 
             # Try to get metadata DICT
             metaData = flannelfox.scenetools.TV.parseTitle(self.elements['title'])
 
         else:
            super(TV, elf).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-           self.elements['torrentType'] = u'tv'
+           self.elements['torrentType'] = 'tv'
 
         self.populateProperties(metaData)
 
@@ -249,21 +254,42 @@ class Movie(Generic):
     Torrent Object Specific to Movies
     '''
 
-    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison=u'or', feedDestination=None):
+    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison='or', feedDestination=None):
 
         if metaData is None:
             super(Movie, self).__init__(torrentTitle, url, minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-            self.elements['torrentType'] = u'movie'
+            self.elements['torrentType'] = 'movie'
 
             # Try to get metadata Dict
             metaData = flannelfox.scenetools.Movie.parseTitle(self.elements['title'])
 
         else:
             super(Movie, self).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
-            self.elements['torrentType'] = u'movie'
+            self.elements['torrentType'] = 'movie'
+
+        self.populateProperties(metaData)
+
+
+class Ebook(Generic):
+    '''
+    Torrent Object Specific to EBooks
+    '''
+
+    def __init__(self, torrentTitle=None, url=None, metaData=None, minTime=0, minRatio=0.0, comparison='or', feedDestination=None):
+
+        if metaData is None:
+            super(Ebook, self).__init__(torrentTitle, url, minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
+            self.elements['torrentType'] = 'ebook'
+
+            # Try to get metadata Dict
+            metaData = flannelfox.scenetools.Ebook.parseTitle(self.elements['title'])
+
+        else:
+            super(Ebook, self).__init__(metaData['torrentTitle'], metaData['url'], minTime=minTime, minRatio=minRatio, comparison=comparison, feedDestination=feedDestination)
+            self.elements['torrentType'] = 'ebook'
 
         self.populateProperties(metaData)
 
 
 # These are acceptable types in the RSSFeedsConfig File
-TORRENT_TYPES = {'tv':TV, 'movie':Movie, 'none':Generic, 'music':Music}
+TORRENT_TYPES = {'tv':TV, 'movie':Movie, 'none':Generic, 'music':Music, 'ebook':Ebook}

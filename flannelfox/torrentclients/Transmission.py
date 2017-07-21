@@ -1,863 +1,880 @@
 #-------------------------------------------------------------------------------
-# Name:        TransmissionRemote
-# Purpose:     Interacts with transmission daemon
+# Name:		TransmissionRemote
+# Purpose:	Interacts with transmission daemon
 #
-# TODO: 
-#           Modify torrent using funcs to use the torrent class
-#           List out the actual generic calls
+# TODO:		Modify torrent using funcs to use the torrent class
+#			List out the actual generic calls
+#			verify and start -> Please Verify Local Data! Piece #114 is corrupt.
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 # System Includes
-import re, json, time
+import json, time
 
 
 # Third party modules
 import requests
+
 # Needed to fix an SSL issue with requests
-import urllib3.contrib.pyopenssl
-urllib3.contrib.pyopenssl.inject_into_urllib3()
+#import urllib3.contrib.pyopenssl
+#urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 # flannelfox Includes
-import flannelfox
-import Trackers
-
-from flannelfox import Settings
-from Torrent import Status as TorrentStatus
-from Torrent import Torrent
+from flannelfox.settings import settings
+from flannelfox.torrentclients.Torrent import Status as TorrentStatus
+from flannelfox.torrentclients.Torrent import Torrent
+from flannelfox.torrentclients import Trackers
+from flannelfox.tools import changeCharset
 
 # Setup the logging agent
 from flannelfox import logging
 
-TRANSMISSION_MAX_RETRIES = 3
-
-
 class Responses(object):
-    success = u'success'
-    invalidArgument = u'invalid argument'
-    duplicate = u'duplicate torrent'
-    badTorrent = u'invalid or corrupt torrent file'
-    torrentNotFound = u'gotMetadataFromURL: http error 404: Not Found'
-    torrentBadRequest = u'gotMetadataFromURL: http error 400: Bad Request'
-    torrentServiceUnavailable = u'gotMetadataFromURL: http error 503: Service Unavailable'
-    torrentNoResponse = u"gotMetadataFromURL: http error 0: No Response"
+	success = 'success'
+	invalidArgument = 'invalid argument'
+	duplicate = 'duplicate torrent'
+	badTorrent = 'invalid or corrupt torrent file'
+	torrentNotFound = 'gotMetadataFromURL: http error 404: Not Found'
+	torrentBadRequest = 'gotMetadataFromURL: http error 400: Bad Request'
+	torrentServiceUnavailable = 'gotMetadataFromURL: http error 503: Service Unavailable'
+	torrentNoResponse = 'gotMetadataFromURL: http error 0: No Response'
 
 
 class Client(object):
 
-    def __init__(self, settings={}, host=u"localhost", port=u"9091", user=None, password=None, rpcLocation=None, https=False):
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("TransmissionClient INIT")
-        self.logger.debug("TransmissionClient Settings: {0}".format(settings))
-
-        self.elements = {}
-        self.elements["queue"] = []
-        self.elements["sessionId"] = None
-
-        if settings != {}:
-            self.elements.update(settings)
-        else:
-            self.elements["host"] = host
-            self.elements["port"] = port
-            self.elements["user"] = user
-            self.elements["password"] = password
-            self.elements["rpcLocation"] = rpcLocation
-            self.elements["https"] = https
-
-
-        self.logger.debug("TransmissionClient Settings 2: {0}".format(self.elements))
-
-        # Strip off the leading slash if it exists
-        self.elements["rpcLocation"] = self.elements["rpcLocation"].lstrip('/')
-
-        # tag generator the keep transmisison calls matched
-        self.tagGenerator = self.__generateTag()
-
-        # Build the server URI
-        self.elements["uri"] = u"http"
-
-        if self.elements["https"]:
-            self.elements["uri"] += u"s"
-
-        self.elements["uri"] += u"://{0}:{1}".format(self.elements['host'],self.elements['port'])
-        self.logger.debug("TransmissionClient URL: {0}".format(self.elements['uri']))
-
-            
-    def __transmissionInit(self, action=u'restart'):
-        '''
-        Used to restart the transmission daemon
-        '''
-
-        response,error = subprocess.Popen([TORRENT_DAEMON_INIT,action], stdout=subprocess.PIPE).communicate()
-
-        if error is not None:
-            raise ValueError
-
-
-    def __generateTag(self):
-        '''
-        Generates an int to be used for tag numbers in the transmission-rpc
-        calls
-        '''
-        while True:
-            for n in xrange(65535):
-                yield n
-
-
-    def __sendRequest(self,queryString=None,postData=None):
-        '''
-        Handles making calls to the transmission-rpc interface
-
-        Takes:
-            queryString - GET data
-            postData - PostData
-
-        Returns:
-            Tuple (response and httpCode)
-        '''
-
-        response = u''
-        httpCode = None
-        encoding = u"utf-8"
-        authHandler = None
-        headers = {}
-        uri = None
-        auth = None
-
-        # Check if authentication should be used
-        if self.elements["user"] is not None:
-            auth=(self.elements["user"], self.elements["password"])
-
-        if self.elements["sessionId"] is not None:
-            headers.update({"X-Transmission-Session-Id":self.elements["sessionId"]})
-
-        if postData is not None:
-            headers.update({"Content-type":"application/json"})
-
-        # Add RPC path to the URI
-        if queryString is not None:
-            uri = "{0}/{1}?{2}".format(self.elements["uri"],self.elements["rpcLocation"],queryString)
-        else:
-            uri = "{0}/{1}".format(self.elements["uri"],self.elements["rpcLocation"])
+	elements = {
+		'host': 'localhost',
+		'port': '9091',
+		'user': None,
+		'password': None,
+		'rpcLocation': None,
+		'https': False,
+		'queue': [],
+		'sessionId': None
+	}
 
-        self.logger.debug("Trying to communicate with the Transmission Server")
-        try:
-            # Connect to the RPC server
-            if postData is None:
-                if auth is not None:
-                    r = requests.get(uri, auth=auth, headers=headers)
-                else:
-                    r = requests.get(uri, headers=headers)
-            else:
-                if auth is not None:
-                    r = requests.post(uri, auth=auth, headers=headers, data=postData)
-                else:
-                    r = requests.post(uri, headers=headers, data=postData)
+	TRANSMISSION_MAX_RETRIES = 3
 
-            response = r.content
-            httpCode = r.status_code
-            encoding = r.encoding
+	SLEEP_SHORT = 5
+	SLEEP_LONG = 10
+
+	logger = None
+
+	def __init__(self):
+
+		self.logger = logging.getLogger(__name__)
+		self.logger.info('TransmissionClient INIT')
+		self.logger.debug('TransmissionClient Settings: {0}'.format(settings['client']))
+
+		if settings['client'] != {}:
+			self.elements.update(settings['client'])
+
+		self.logger.debug('TransmissionClient Settings 2: {0}'.format(self.elements))
+
+		# Strip off the leading slash if it exists
+		self.elements['rpcLocation'] = self.elements['rpcLocation'].lstrip('/')
+
+		# tag generator the keep transmisison calls matched
+		self.tagGenerator = self.__generateTag()
+
+		# Build the server URI
+		self.elements['uri'] = 'http'
+
+		if self.elements['https']:
+			self.elements['uri'] += 's'
 
-            # Look for the X-Transmission-Session-Id header and save it, then
-            # make the request again
-            if httpCode == 409:
-                self.elements["sessionId"] = r.headers.get("X-Transmission-Session-Id")
-                self.logger.debug("X-Transmission-Session-Id Error")
+		self.elements['uri'] += '://{0}:{1}'.format(self.elements['host'], self.elements['port'])
+		self.logger.debug('TransmissionClient URL: {0}'.format(self.elements['uri']))
+
 
-                response, httpCode, encoding = self.__sendRequest(queryString,postData)
+	@classmethod
+	def __transmissionInit(self, action='restart'):
+		'''
+		Used to restart the transmission daemon
+		'''
+
+		response,error = subprocess.Popen([TORRENT_DAEMON_INIT,action], stdout=subprocess.PIPE).communicate()
 
-            self.logger.debug("Transmission call completed")
-        except Exception as e:
-            self.logger.debug("There was a problem communicating with Transmission:\n{0}".format(e))
-            try:
-                httpCode = e.code
-            except (AttributeError):
-                httpCode = -1
+		if error is not None:
+			raise ValueError
+
 
-        return (response, httpCode, encoding)
+	@classmethod
+	def __generateTag(self):
+		'''
+		Generates an int to be used for tag numbers in the transmission-rpc
+		calls
+		'''
+		while True:
+			for n in range(65535):
+				yield n
 
 
-    def __parseTransmissionResponse(self,postData,tries=0):
-        '''
-        Parse a transmission response
+	def __sendRequest(self, queryString=None, postData=None):
+		'''
+		Handles making calls to the transmission-rpc interface
 
-        Takes:
-            tries - Limits the recursion of this call when tags do not match
-            postData - The data posted to transmission-rpc
+		Takes:
+			queryString - GET data
+			postData - PostData
 
-        Returns:
-            Tuple (torrents,httpResponseCode,transmissionResponseCode)
-        '''
+		Returns:
+			Tuple (response and httpCode)
+		'''
 
-        response = None
-        httpResponseCode = -1
-        encoding = None
-        transmissionResponseCode = u"failed"
+		response = ''
+		httpCode = None
+		encoding = 'utf-8'
+		headers = {}
+		uri = None
+		auth = None
+
+		# Check if authentication should be used
+		if self.elements['user'] is not None:
+			auth=(self.elements['user'], self.elements['password'])
+
+		if self.elements['sessionId'] is not None:
+			headers.update({'X-Transmission-Session-Id':self.elements['sessionId']})
+
+		if postData is not None:
+			headers.update({'Content-type':'application/json'})
 
-        if tries >= TRANSMISSION_MAX_RETRIES:
-            return (response,httpResponseCode,transmissionResponseCode)
+		# Add RPC path to the URI
+		if queryString is not None:
+			uri = '{0}/{1}?{2}'.format(self.elements['uri'],self.elements['rpcLocation'],queryString)
+		else:
+			uri = '{0}/{1}'.format(self.elements['uri'],self.elements['rpcLocation'])
+
+		self.logger.debug('Trying to communicate with the Transmission Server')
+		try:
+			# Connect to the RPC server
+			if postData is None:
+				if auth is not None:
+					r = requests.get(uri, auth=auth, headers=headers)
+				else:
+					r = requests.get(uri, headers=headers)
+			else:
+				if auth is not None:
+					r = requests.post(uri, auth=auth, headers=headers, data=postData)
+				else:
+					r = requests.post(uri, headers=headers, data=postData)
+
+			response = r.content
+			httpCode = r.status_code
+			encoding = r.encoding
+
+			# Look for the X-Transmission-Session-Id header and save it, then
+			# make the request again
+			if httpCode == 409:
+				self.elements['sessionId'] = r.headers.get('X-Transmission-Session-Id')
+				self.logger.debug('X-Transmission-Session-Id Error')
+
+				response, httpCode, encoding = self.__sendRequest(queryString,postData)
+
+			self.logger.debug('Transmission call completed')
+		except Exception as e:
+			self.logger.debug('There was a problem communicating with Transmission:\n{0}'.format(e))
+			try:
+				httpCode = e.code
+			except (AttributeError):
+				httpCode = -1
+
+		return (response, httpCode, encoding)
+
+
+	def __parseTransmissionResponse(self, postData, tries=0):
+		'''
+		Parse a transmission response
+
+		Takes:
+			tries - Limits the recursion of this call when tags do not match
+			postData - The data posted to transmission-rpc
+
+		Returns:
+			Tuple (torrents,httpResponseCode,transmissionResponseCode)
+		'''
+
+		response = None
+		httpResponseCode = -1
+		transmissionResponseCode = 'failed'
+
+		if tries >= self.TRANSMISSION_MAX_RETRIES:
+			return (response, httpResponseCode, transmissionResponseCode)
+
+		# Make the call
+		response, httpResponseCode = self.__sendRequest(postData = postData.encode('utf-8'))[:2]
+
+		if httpResponseCode == 401:
+			return (response, httpResponseCode, 'Authorization Error')
+
+		# Ensure the result is in utf-8
+		response = changeCharset(response,'utf-8','html.parser')
+
+		# parse the json if it exists
+		if response is not None:
+			try:
+				response = json.loads(response.decode('utf-8'))
+
+			# If there is a problem parsing the response then return an empty set
+			except (ValueError) as e:
+				pass
+
+		# Make sure we got a result
+		if isinstance(response,dict):
+
+			# Get Tag, if tag is available and ensure the response matches
+			posted = json.loads(postData)
+			if isinstance(posted,dict) and 'tag' in posted:
+				if isinstance(response,dict) and 'tag' in response:
+					if posted['tag'] != response['tag']:
+						time.sleep(self.SLEEP_SHORT)
+						response,httpResponseCode = self.__parseTransmissionResponse(
+							postData=postData,
+							tries=tries+1
+						)
 
-        # Make the call
-        response, httpResponseCode, encoding = self.__sendRequest(postData = postData.encode("utf-8"))
 
-        # Ensure httpResponseCode is unicode
-        httpResponseCode = unicode(httpResponseCode)
+			# Get Transmission Response Code
+			if isinstance(response,dict) and 'result' in response:
+				transmissionResponseCode = response['result']
 
-        # Ensure the result is in utf-8
-        response = Settings.changeCharset(response,"utf-8","html.parser")
+		return (response, httpResponseCode, transmissionResponseCode)
+
 
-        torrents = []
+	def __getTorrents(self, fields=None):
+		'''
+		Fetch a set of torrents with the provided information
+
+		Takes:
+			fields - Fields to be returned in the transmission-rpc
+
+		Returns:
+			Tuple (torrents,httpResponseCode,transmissionResponseCode)
+		'''
+		fields = fields or [
+			'hashString',
+			'id',
+			'error',
+			'errorString',
+			'uploadRatio',
+			'percentDone',
+			'doneDate',
+			'activityDate',
+			'rateUpload',
+			'status',
+			'downloadDir',
+			'trackerStats'
+		]
+
+
+		# Method
+		commandJson = '{"method":"torrent-get",'
+
+		# Arguments
+		commandJson += '"arguments":{'
 
-        # parse the json if it exists
-        if response is not None:
-            try:
-                response = json.loads(response)
+		# Fields
+		commandJson += '"fields":["'
+		commandJson += '","'.join(fields)
+		commandJson += '"]'
+
+		# Close Arguments
+		commandJson += '},'
+
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
+
+		# Extract the values so we can replace the response with only torrents
+		response,httpResponseCode,transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+
+		# Get Torrents
+		torrents = []
 
-            # If there is a problem parsing the response then return an empty set
-            except (ValueError) as e:
-                pass
+		if isinstance(response,dict) and 'arguments' in response:
+			if isinstance(response['arguments'],dict) and 'torrents' in response['arguments']:
+				if isinstance(response['arguments']['torrents'],list):
+					torrents = response['arguments']['torrents']
+
+		return (torrents,httpResponseCode,transmissionResponseCode)
+
 
-        # Make sure we got a result
-        if isinstance(response,dict):
+	def updateQueue(self):
+		'''
+		Updates the class variable queue with the latest torrent queue info
 
-            # Get Tag, if tag is available and ensure the response matches
-            posted = json.loads(postData)
-            if isinstance(posted,dict) and "tag" in posted:
-                if isinstance(response,dict) and "tag" in response:
-                    if posted["tag"] != response["tag"]:
-                        time.sleep(5)
-                        response,httpResponseCode = self.__parseTransmissionResponse(self,postData,tries=tries+1)
+		Returns:
+			Tuple (transmissionResponseCode, httpResponseCode)
+		'''
 
+		# Initial attempt at fetching data
+		torrents,httpResponseCode,transmissionResponseCode = self.__getTorrents()
+
+		# Incase we get an incomplete answer or fail let's retry
+		tries = 0
+		while transmissionResponseCode != Responses.success and tries < self.TRANSMISSION_MAX_RETRIES:
+			torrents, httpResponseCode, transmissionResponseCode = self.__getTorrents()
+			tries += 1
 
-            # Get Transmission Response Code
-            if isinstance(response,dict) and "result" in response:
-                transmissionResponseCode = unicode(response["result"])
+		if isinstance(torrents,list):
+			self.elements['queue'] = []
 
-        return (response, httpResponseCode, transmissionResponseCode)
+			for torrent in torrents:
 
+				trackers = torrent['trackerStats']
 
-    def __getTorrents(self,fields=[u"hashString",u"id",u"error",u"errorString",u"uploadRatio",u"percentDone",u"doneDate",u"activityDate",u"rateUpload",u"status",u"downloadDir",u'trackerStats']):
-        '''
-        Fetch a set of torrents with the provided information
+				# Look to make sure at least one tracker is working
+				# This is due to bug #5775
+				# https://trac.transmissionbt.com/ticket/5775
+				if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == '':
 
-        Takes:
-            fields - Fields to be returned in the transmission-rpc
+					workingTrackerExists = False
 
-        Returns:
-            Tuple (torrents,httpResponseCode,transmissionResponseCode)
-        '''
+					for tracker in trackers:
+						if not workingTrackerExists:
 
-        # Method
-        commandJson = u'{"method":"torrent-get",'
+							if tracker['lastAnnounceResult'] != '' and tracker['lastAnnounceResult'] != None:
+								workingTrackerExists = True
+								self.logger.debug('Rewriting errorString: {0}'.format(tracker['lastAnnounceResult']))
+								torrent['errorString'] = tracker['lastAnnounceResult']
 
-        # Arguments
-        commandJson += u'"arguments":{'
+							elif tracker['lastAnnounceSucceeded']:
+								workingTrackerExists = True
 
-        # Fields
-        commandJson += u'"fields":["'
-        commandJson += u'","'.join(fields)
-        commandJson += u'"]'
+					if not workingTrackerExists and torrent['errorString'] == '':
+						torrent['error'] = -1
+						torrent['errorString'] = 'No Connectable Trackers Found'
+						torrent['error'] = 99
+						torrent['errorString'] = 'No Connectable Trackers Found'
 
-        # Close Arguments
-        commandJson += u'},'
+				# Check for torrents that should be removed
+				for error in Trackers.Responses.Remove:
+					if error in torrent['errorString']:
+						self.logger.debug('Removing torrent do to errorString: {0}'.format(torrent['errorString']))
+						self.removeBadTorrent(hashString=torrent['hashString'], reason=torrent['errorString'])
+						continue
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+				# Check if the torrent is corrupted
+				if 'please verify local data' in torrent['errorString']:
 
-        # Extract the values so we can replace the response with only torrents
-        response,httpResponseCode,transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+					# Ensure a Check is not already in place
+					if (torrent['status'] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
+						self.verifyTorrent(hashString=torrent['hashString'])
+						continue
 
-        # Get Torrents
-        torrents = []
+					elif torrent['status'] == TorrentStatus.Paused:
+						self.startTorrent(hashString=torrent['hashString'])
+						continue
 
-        if isinstance(response,dict) and "arguments" in response:
-            if isinstance(response["arguments"],dict) and "torrents" in response["arguments"]:
-                if isinstance(response["arguments"]["torrents"],list):
-                    torrents = response["arguments"]["torrents"]
+					self.logger.debug('Corrupted torrent: {1} STAT: {0}'.format(torrent['status'], torrent['hashString']))
 
-        return (torrents,httpResponseCode,transmissionResponseCode)
+				elif torrent['errorString'] != '':
+					self.logger.debug('Error encountered: {0} {1}'.format(torrent['hashString'],torrent['errorString']))
 
 
-    def updateQueue(self):
-        '''
-        Updates the class variable queue with the latest torrent queue info
+				t = Torrent(hashString=torrent['hashString'],
+							id=torrent['id'],
+							error=torrent['error'],
+							errorString=torrent['errorString'],
+							uploadRatio=torrent['uploadRatio'],
+							percentDone=torrent['percentDone'],
+							doneDate=torrent['doneDate'],
+							activityDate=torrent['activityDate'],
+							rateUpload=torrent['rateUpload'],
+							downloadDir=torrent['downloadDir'],
+							status=torrent['status']
+				)
 
-        Returns:
-            Tuple (transmissionResponseCode, httpResponseCode)
-        '''
+				self.elements['queue'].append(t)
 
-        # Initial attempt at fetching data
-        torrents,httpResponseCode,transmissionResponseCode = self.__getTorrents()
+		return (transmissionResponseCode, httpResponseCode)
 
-        # Incase we get an incomplete answer or fail let's retry
-        tries = 0
-        while transmissionResponseCode != Responses.success and tries < TRANSMISSION_MAX_RETRIES:
-            torrents, httpResponseCode, transmissionResponseCode = self.__getTorrents()
-            tries += 1
 
-        if isinstance(torrents,list):
-            self.elements["queue"] = []
+	def getQueue(self):
+		'''
+		Returns:
+			List [torrents]
+		'''
+		return self.elements['queue']
 
-            for torrent in torrents:
 
-                trackers = torrent['trackerStats']
-                
-                # Look to make sure at least one tracker is working
-                # This is due to bug #5775
-                # https://trac.transmissionbt.com/ticket/5775
-                if torrent['status'] == TorrentStatus.Downloading and torrent['percentDone'] == 0.0 and torrent['errorString'] == u'':
+	def verifyTorrent(self, hashString=None):
+		'''
+		Verifies a corrupted torrent
 
-                    workingTrackerExists = False
+		Takes:
+			hashString - Hash of the specific torrent to remove
 
-                    for tracker in trackers:
-                        if not workingTrackerExists:
-                            
-                            if tracker['lastAnnounceResult'] != '' and tracker['lastAnnounceResult'] != None:
-                                workingTrackerExists = True
-                                self.logger.debug('Rewriting errorString: {0}'.format(tracker['lastAnnounceResult']))
-                                torrent['errorString'] = tracker['lastAnnounceResult']
+		Returns:
+			bool True is action completed
+		'''
+		time.sleep(self.SLEEP_SHORT)
 
-                            elif tracker['lastAnnounceSucceeded']:
-                                workingTrackerExists = True
+		if hashString is None:
+			return False
 
-                    if not workingTrackerExists and torrent['errorString'] == u'':
-                        torrent['error'] = -1
-                        torrent['errorString'] = u'No Connectable Trackers Found'
-                        torrent['error'] = 99
-                        torrent['errorString'] = 'No Connectable Trackers Found'
+		# Method
+		commandJson = '{"method":"torrent-verify",'
 
-                # Check for torrents that should be removed
-                for error in Trackers.Responses.Remove:
-                    if error in torrent['errorString']:
-                        self.logger.debug('Removing torrent do to errorString: {0}'.format(torrent['errorString']))
-                        self.removeBadTorrent(hashString=torrent['hashString'], reason=torrent['errorString'])
-                        continue
+		# Arguments
+		commandJson += '"arguments":{'
 
-                # Check if the torrent is corrupted
-                if 'please verify local data' in torrent['errorString']:
+		# Ids
+		commandJson += '"ids":"{0}"'.format(hashString)
 
-                    # Ensure a Check is not already in place
-                    if (torrent["status"] not in [TorrentStatus.Paused, TorrentStatus.QueuedForVerification, TorrentStatus.Verifying]):
-                        self.verifyTorrent(hashString=torrent["hashString"])
-                        continue
+		# Close Arguments
+		commandJson += '},'
 
-                    elif torrent["status"] == TorrentStatus.Paused:
-                        self.StartTorrent(hashString=torrent["hashString"])
-                        continue
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-                    self.logger.debug("Corrupted torrent: {1} STAT: {0}".format(torrent["status"], torrent["hashString"]))
+		# Stop the torrent first
+		if not self.stopTorrent(hashString=hashString):
+			# Could not stop the torrent... This should not happen
+			pass
 
-                elif torrent["errorString"] != u'':
-                    self.logger.debug("Error encountered: {0} {1}".format(torrent["hashString"],torrent["errorString"]))
+		# Make sure the call worked
+		# *_ acts as a list to eat all data except what is before or after it
+		*_, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
+		if transmissionResponseCode == Responses.success:
+			self.logger.debug('Verification Succeeded')
+			return True
+		else:
+			self.logger.debug('Verification Failed')
+			return False
 
-                t = Torrent(hashString=torrent["hashString"],
-                            id=torrent["id"],
-                            error=torrent["error"],
-                            errorString=torrent["errorString"],
-                            uploadRatio=torrent["uploadRatio"],
-                            percentDone=torrent["percentDone"],
-                            doneDate=torrent["doneDate"],
-                            activityDate=torrent["activityDate"],
-                            rateUpload=torrent["rateUpload"],
-                            downloadDir=torrent["downloadDir"],
-                            status=torrent["status"]
-                )
 
-                self.elements["queue"].append(t)
+	def stopTorrent(self, hashString=None):
+		'''
+		Stops a torrent
 
-        return (transmissionResponseCode, httpResponseCode)
+		Takes:
+			hashString - Hash of the specific torrent to remove
 
+		Returns:
+			bool True is action completed
+		'''
+		time.sleep(self.SLEEP_SHORT)
 
-    def getQueue(self):
-        '''
-        Returns:
-            List [torrents]
-        '''
-        return self.elements["queue"]
+		if hashString is None:
+			return False
 
+		# Method
+		commandJson = '{"method":"torrent-stop",'
 
-    def verifyTorrent(self,hashString=None):
-        '''
-        Verifies a corrupted torrent
+		# Arguments
+		commandJson += '"arguments":{'
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
+		# Ids
+		commandJson += '"ids":"{0}"'.format(hashString)
 
-        Returns:
-            bool True is action completed
-        '''
-        time.sleep(5)
+		# Close Arguments
+		commandJson += '},'
 
-        if hashString is None:
-            return False
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        # Method
-        commandJson = u'{"method":"torrent-verify",'
+		# Make sure the call worked
+		*_, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        # Arguments
-        commandJson += u'"arguments":{'
+		if transmissionResponseCode == Responses.success:
+			self.logger.debug('Stop Succeeded')
+			return True
+		else:
+			self.logger.debug('Stop Failed')
+			return False
 
-        # Ids
-        commandJson += u'"ids":"{0}"'.format(hashString)
 
-        # Close Arguments
-        commandJson += u'},'
+	def startTorrent(self, hashString=None):
+		'''
+		Starts a torrent
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+		Takes:
+			hashString - Hash of the specific torrent to remove
 
-        # Stop the torrent first
-        if not self.StopTorrent(hashString=hashString):
-            # Could not stop the torrent... This should not happen
-            pass
+		Returns:
+			bool True is action completed
+		'''
+		time.sleep(self.SLEEP_LONG)
 
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+		if hashString is None:
+			return False
 
-        if transmissionResponseCode == Responses.success:
-            self.logger.debug("Verification Succeeded")
-            return True
-        else:
-            self.logger.debug("Verification Failed")
-            return False
+		# Method
+		commandJson = '{"method":"torrent-start",'
 
+		# Arguments
+		commandJson += '"arguments":{'
 
-    def StopTorrent(self,hashString=None):
-        '''
-        Stops a torrent
+		# Ids
+		commandJson += '"ids":"{0}"'.format(hashString)
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
+		# Close Arguments
+		commandJson += '},'
 
-        Returns:
-            bool True is action completed
-        '''
-        time.sleep(5)
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        if hashString is None:
-            return False
+		# Make sure the call worked
+		response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        # Method
-        commandJson = u'{"method":"torrent-stop",'
+		if transmissionResponseCode == Responses.success:
+			self.logger.debug('Start Succeeded')
+			return True
+		else:
+			self.logger.debug('Start Failed')
+			return False
 
-        # Arguments
-        commandJson += u'"arguments":{'
 
-        # Ids
-        commandJson += u'"ids":"{0}"'.format(hashString)
+	def removeBadTorrent(self, hashString=None, reason='No Reason Given'):
+		'''
+		Removes a torrent from both transmission and the database
+		this should be called when there is a bad torrent.
 
-        # Close Arguments
-        commandJson += u'},'
+		Takes:
+			hashString - Hash of the specific torrent to remove
+		'''
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+		# Remove the torrent from the client
+		self.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        if transmissionResponseCode == Responses.success:
-            self.logger.debug("Stop Succeeded")
-            return True
-        else:
-            self.logger.debug("Stop Failed")
-            return False
+	def removeTorrent(self, hashString=None, deleteData=False, reason='No Reason Given'):
+		'''
+		Removes a torrent from transmission
 
+		Takes:
+			hashString - Hash of the specific torrent to remove
 
-    def StartTorrent(self,hashString=None):
-        '''
-        Starts a torrent
+			deleteData - bool, tells if the torrent data should be removed
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
+			TODO: if hashString is not specified then we should remove the torrent
+			that has the longest time since active.
 
-        Returns:
-            bool True is action completed
-        '''
-        time.sleep(10)
+		Returns:
+			bool True is action completed
+		'''
+		time.sleep(self.SLEEP_SHORT)
 
-        if hashString is None:
-            return False
+		if hashString is None:
+			return False
 
-        # Method
-        commandJson = u'{"method":"torrent-start",'
+		# Method
+		commandJson = '{"method":"torrent-remove",'
 
-        # Arguments
-        commandJson += u'"arguments":{'
+		# Arguments
+		commandJson += '"arguments":{'
 
-        # Ids
-        commandJson += u'"ids":"{0}"'.format(hashString)
+		# Ids
+		commandJson += '"ids":"{0}",'.format(hashString)
 
-        # Close Arguments
-        commandJson += u'},'
+		# Delete Option
+		commandJson += '"delete-local-data":{0}'.format(str(deleteData).lower())
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+		# Close Arguments
+		commandJson += '},'
 
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        if transmissionResponseCode == Responses.success:
-            self.logger.debug("Start Succeeded")
-            return True
-        else:
-            self.logger.debug("Start Failed")
-            return False
+		# Make sure the call worked
+		response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
 
-    def removeBadTorrent(self, hashString=None, reason='No Reason Given'):
-        '''
-        Removes a torrent from both transmission and the database
-        this should be called when there is a bad torrent.
+		if deleteData:
+			self.logger.debug('Torrent deleted from client: {0}'.format(reason))
+		else:
+			self.logger.debug('Torrent Removed from client: {0}'.format(reason))
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
-        '''
+		if transmissionResponseCode == Responses.success:
+			self.logger.debug('Torrent Removal Succeeded')
+			return True
+		else:
+			self.logger.debug('Torrent Removal Failed')
+			return False
 
-        # Remove the torrent from the client
-        self.removeTorrent(hashString=hashString, deleteData=True, reason=reason)
 
+	def removeExtraTrackers(self, hashString=None):
+		'''
+		Attempts to remove extra trackers from torrents that can cause automation issues.
+		'''
+		# Method
+		commandJson = '{"method":"torrent-set",'
 
+		# Arguments
+		commandJson += '"arguments":{'
 
-    def removeTorrent(self, hashString=None, deleteData=False, reason='No Reason Given'):
-        '''
-        Removes a torrent from transmission
+		# Tracker remove
+		commandJson += '"trackerRemove":[1],'
 
-        Takes:
-            hashString - Hash of the specific torrent to remove
+		# Torrent Id
+		commandJson += '"ids":"{0}"'.format(hashString)
 
-            deleteData - bool, tells if the torrent data should be removed
+		# Close Arguments
+		commandJson += '},'
 
-            TODO: if hashString is not specified then we should remove the torrent
-            that has the longest time since active.
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        Returns:
-            bool True is action completed
-        '''
-        time.sleep(5)
+		self.logger.debug('Trying to remove extra trackers')
+		while (True):
 
-        if hashString is None:
-            return False
+		# Remove a tracker
+			response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        # Method
-        commandJson = u'{"method":"torrent-remove",'
+			# If the call did not work then we are down to
+			# the last tracker so break out of the loop
+			if transmissionResponseCode == Responses.invalidArgument:
+				break
 
-        # Arguments
-        commandJson += u'"arguments":{'
+			self.logger.debug('Tracker removed')
 
-        # Ids
-        commandJson += u'"ids":"{0}",'.format(hashString)
+			# Wait 3 seconds before removing the next tracker
+			time.sleep(self.SLEEP_SHORT)
 
-        # Delete Option
-        commandJson += u'"delete-local-data":{0}'.format(str(deleteData).lower())
+		return True
 
-        # Close Arguments
-        commandJson += u'},'
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+	def addTorrentURL(self, url=None, destination=settings['files']['defaultTorrentLocation']):
+		'''
+		Attempts to load the torrent at the given url into transmission
 
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+		Takes:
+			url - url of the torrent file to be added
 
+			destination - where the torrent should be saved
 
-        if deleteData:
-            self.logger.debug('Torrent deleted from client: {0}'.format(reason))
-        else:
-           self.logger.debug('Torrent Removed from client: {0}'.format(reason))
+		Returns:
+			bool True is action completed successfully
+		'''
+		self.logger.info('TransmissionClient adding torrent')
+		# Make sure a URL was passed
+		if url is None:
+			raise ValueError('A url must be provided to add a torrent')
 
-        if transmissionResponseCode == Responses.success:
-            self.logger.debug("Torrent Removal Succeeded")
-            return True
-        else:
-            self.logger.debug("Torrent Removal Failed")
-            return False
+		self.logger.debug('Trying to add a new torrent:\n{0}'.format(url))
 
+		# Method
+		commandJson = '{"method":"torrent-add",'
 
+		# Arguments
+		commandJson += '"arguments":{'
 
-    def removeExtraTrackers(self, hashString=None):
-        '''
-        Attempts to remove extra trackers from torrents that can cause automation issues.
-        '''
-        # Method
-        commandJson = u'{"method":"torrent-set",'
+		# Download Dir
+		if destination is not None:
+			commandJson += '"download-dir":"{0}",'.format(destination)
 
-        # Arguments
-        commandJson += u'"arguments":{'
-        
-        # Tracker remove
-        commandJson += u'"trackerRemove":[1],'
-        
-        # Torrent Id
-        commandJson += u'"ids":"{0}"'.format(hashString)
+		# Filename
+		commandJson += '"filename":"{0}"'.format(url)
 
-        # Close Arguments
-        commandJson += u'},'
+		# Close Arguments
+		commandJson += '},'
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        self.logger.debug("Trying to remove extra trackers")
-        while (True):
+		# Make sure the call worked
+		response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        # Remove a tracker
-            response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
-            
-            # If the call did not work then we are down to 
-            # the last tracker so break out of the loop
-            if transmissionResponseCode == Responses.invalidArgument:
-                break
+		if httpResponseCode != 200:
+			self.logger.info('Torrent Add Failed: {0}'.format(httpResponseCode))
 
-            self.logger.debug("Tracker removed")
-            
-            # Wait 3 seconds before removing the next tracker
-            time.sleep(5)
+		# Get Duplicated Torrents
+		if isinstance(response,dict) and 'arguments' in response:
+			if isinstance(response['arguments'],dict) and 'torrent-duplicate' in response['arguments']:
 
-        return True
+				# Duplicate Torrent
+				duplicateTorrent = response['arguments']['torrent-duplicate']
+				self.logger.info('Duplicate Torrent Detected: {0}'.format(transmissionResponseCode))
+				return (1, duplicateTorrent['hashString'])
 
+		# Get Added Torrents
+		if isinstance(response,dict) and 'arguments' in response:
+			if isinstance(response['arguments'],dict) and 'torrent-added' in response['arguments']:
 
-    def addTorrentURL(self, url=None, destination=flannelfox.settings['files']['defaultTorrentLocation']):
-        '''
-        Attempts to load the torrent at the given url into transmission
+				torrentAdded = response['arguments']['torrent-added']
 
-        Takes:
-            url - url of the torrent file to be added
+		if transmissionResponseCode == Responses.success:
+			# TODO: Remove extra trackers, this is needed due to a bug in
+			# transmission that prevents non-communication related errors
+			# from being seen when there is a back tracker.
+			self.logger.info('Torrent Added: {0}'.format(transmissionResponseCode))
+			return (0, torrentAdded['hashString'])
 
-            destination - where the torrent should be saved
+		else:
+			# Here we need to handle any special errors encountered when
+			# trying to add a torrent
 
-        Returns:
-            bool True is action completed successfully
-        '''
-        self.logger.info("TransmissionClient adding torrent")
-        # Make sure a URL was passed
-        if url is None:
-            raise ValueError(u"A url must be provided to add a torrent")
+			if (transmissionResponseCode in [
+						Responses.torrentBadRequest,
+						Responses.torrentServiceUnavailable,
+						Responses.torrentNoResponse
+					]
+				):
+				# Torrent is broken so lets delete it from the DB, this leaves the opportunity
+				# for the torrent to later be added again
+				self.logger.info('Torrent failed, but we can retry')
+				return (2, transmissionResponseCode)
 
-        self.logger.debug("Trying to add a new torrent:\n{0}".format(url))
 
-        # Method
-        commandJson = u'{"method":"torrent-add",'
+			elif (transmissionResponseCode in [
+						Responses.badTorrent,
+						Responses.torrentNotFound
+					]
+				):
+				self.logger.info('Torrent is bad, so let\'s blacklist it')
+				return (3, transmissionResponseCode)
 
-        # Arguments
-        commandJson += u'"arguments":{'
+			else:
+				self.logger.info('Torrent Add Failed: {0}'.format(transmissionResponseCode))
+				return (4, 'Unknown Error/Failed')
 
-        # Download Dir
-        if destination is not None:
-            commandJson += u'"download-dir":"{0}",'.format(destination)
 
-        # Filename
-        commandJson += u'"filename":"{0}"'.format(url)
+	def getSlowestSeeds(self, num=None):
+		'''
+		Look for the slowest seeding torrents, slowest first
 
-        # Close Arguments
-        commandJson += u'},'
+		Takes:
+			num - Int, the number of torrent objects to return
+		'''
+		slowestSeeds = []
 
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
+		torrents = self.getFinishedSeeding()
 
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
+		for torrent in torrents:
+			if torrent.isSeeding():
+				slowestSeeds.append(torrent)
 
-        # Get Duplicated Torrents
-        if isinstance(response,dict) and "arguments" in response:
-            if isinstance(response["arguments"],dict) and u"torrent-duplicate" in response["arguments"]:
+		# Sort torrents if we have any
+		if len(slowestSeeds) > 0:
+			slowestSeeds.sort(key=lambda torrent: torrent['rateUpload'])
 
-                # Duplicate Torrent
-                duplicateTorrent = response["arguments"]["torrent-duplicate"]
-                self.logger.info("Duplicate Torrent Detected: {0}".format(transmissionResponseCode))
-                return (1, duplicateTorrent["hashString"])
+		if len(slowestSeeds) == 0 or num is None:
+			return slowestSeeds
+		return slowestSeeds[:num]
 
-        # Get Added Torrents
-        if isinstance(response,dict) and "arguments" in response:
-            if isinstance(response["arguments"],dict) and "torrent-added" in response["arguments"]:
-                
-                torrentAdded = response["arguments"]["torrent-added"]
 
-        if transmissionResponseCode == Responses.success:
-            # TODO: Remove extra trackers, this is needed due to a bug in
-            # transmission that prevents non-communication related errors
-            # from being seen when there is a back tracker.
-            self.logger.info("Torrent Added: {0}".format(transmissionResponseCode))
-            return (0, torrentAdded["hashString"])
+	def getDormantSeeds(self, num=None):
+		'''
+		Looks for a seeding torrent with the longest time since active, returns
+		torrents, oldest first
+		'''
+		dormantSeeds = []
 
-        else:
-            # Here we need to handle any special errors encountered when
-            # trying to add a torrent
 
-            if (transmissionResponseCode in [
-                        Responses.torrentNotFound,
-                        Responses.torrentBadRequest,
-                        Responses.torrentServiceUnavailable,
-                        Responses.torrentNoResponse
-                    ]
-                ):
-                # Torrent is broken so lets delete it from the DB, this leaves the opportunity
-                # for the torrent to later be added again
-                self.logger.info("Torrent failed, but we can retry")
-                return (2, transmissionResponseCode)
+		torrents = self.getFinishedSeeding()
 
+		for torrent in torrents:
+			if torrent.isDormant():
+				dormantSeeds.append(torrent)
 
-            elif (transmissionResponseCode in [
-                        Responses.badTorrent,
-                        Responses.torrentNotFound
-                    ]
-                ):
-                self.logger.info("Torrent is bad, so let's blacklist it")
-                return (3, transmissionResponseCode)
+		# Sort torrents if we have any
+		if len(dormantSeeds) > 0:
+			dormantSeeds.sort(key=lambda torrent: torrent['activityDate'])
 
-            else:
-                self.logger.info("Torrent Add Failed: {0}".format(transmissionResponseCode))
+		if len(dormantSeeds) == 0 or num is None:
+			return dormantSeeds
+		return dormantSeeds[:num]
 
 
-    def getSlowestSeeds(self,num=None):
-        '''
-        Look for the slowest seeding torrents, slowest first
+	def getDownloading(self, num=None):
+		'''
+		Returns a list of torrents that are downloading
 
-        Takes:
-            num - Int, the number of torrent objects to return
-        '''
-        slowestSeeds = []
+		Takes:
+			num - Int, the number of torrents to return
+		'''
+		downloadingTorrents = []
 
-        torrents = self.getFinishedSeeding()
+		torrents = self.elements['queue']
 
-        for torrent in torrents:
-            if torrent.isSeeding():
-                slowestSeeds.append(torrent)
+		for torrent in torrents:
+			if torrent.isDownloading():
+				downloadingTorrents.append(torrent)
 
-        # Sort torrents if we have any
-        if len(slowestSeeds) > 0:
-            slowestSeeds.sort(key=lambda torrent: torrent["rateUpload"])
+		if len(downloadingTorrents) == 0 or num is None:
+			return downloadingTorrents
+		return downloadingTorrents[:num]
 
-        if num is None or len(slowestSeeds) <= num:
-            return slowestSeeds
-        return slowestSeeds[:num]
 
+	def getSeeding(self, num=None):
+		'''
+		Returns a list of torrents that are Seeding
 
-    def getDormantSeeds(self,num=None):
-        '''
-        Looks for a seeding torrent with the longest time since active, returns
-        torrents, oldest first
-        '''
-        dormantSeeds = []
+		Takes:
+			num - Int, the number of torrents to return
+		'''
+		seedingTorrents = []
 
+		torrents = self.elements['queue']
 
-        torrents = self.getFinishedSeeding()
+		for torrent in torrents:
+			if torrent.isSeeding():
+				seedingTorrents.append(torrent)
 
-        for torrent in torrents:
-            if torrent.isDormant():
-                dormantSeeds.append(torrent)
+		if len(seedingTorrents) == 0 or num is None:
+			return seedingTorrents
+		return seedingTorrents[:num]
 
-        # Sort torrents if we have any
-        if len(dormantSeeds) > 0:
-            dormantSeeds.sort(key=lambda torrent: torrent["activityDate"], reverse=True)
 
-        if dormantSeeds is None or len(dormantSeeds) <= num:
-            return dormantSeeds
-        return dormantSeeds[:num]
+	def getFinishedSeeding(self, num=None):
+		'''
+		Returns a list of torrents that are finished seeding
 
+		Takes:
+			num - Int, the number of torrents to return
+		'''
+		torrents = self.getSeeding()
+		finishedSeeding = []
 
-    def getDownloading(self,num=None):
-        '''
-        Returns a list of torrents that are downloading
+		for torrent in torrents:
+			if torrent.isFinished():
+				finishedSeeding.append(torrent)
 
-        Takes:
-            num - Int, the number of torrents to return
-        '''
-        downloadingTorrents = []
+		if len(finishedSeeding) == 0 or num is None:
+			return finishedSeeding
+		return finishedSeeding[:num]
 
-        torrents = self.elements["queue"]
 
-        for torrent in torrents:
-            if torrent.isDownloading():
-                downloadingTorrents.append(torrent)
+	def setAltSpeed(self, enabled=False):
+		'''
+		Enables/Disables the altSpeed setting in transmission
 
-        if downloadingTorrents is None or len(downloadingTorrents) <= num:
-            return downloadingTorrents
-        return downloadingTorrents[:num]
+		Takes:
+			enabled - bool, True is ON, False is OFF
 
+		Returns:
+			bool, True if action completed
+		'''
 
+		# Method
+		commandJson = '{"method":"session-set",'
 
-    def getSeeding(self,num=None):
-        '''
-        Returns a list of torrents that are Seeding
+		# Arguments
+		commandJson += '"arguments":{'
 
-        Takes:
-            num - Int, the number of torrents to return
-        '''
-        seedingTorrents = []
+		# Ids
+		commandJson += '"alt-speed-time-enabled":{0}'.format(str(enabled).lower())
 
-        torrents = self.elements["queue"]
+		# Close Arguments
+		commandJson += '"},'
 
-        for torrent in torrents:
-            if torrent.isSeeding():
-                seedingTorrents.append(torrent)
+		# Tag (not strictly needed)
+		commandJson += '"tag":{0}'.format(next(self.tagGenerator))+'}'
 
-        if seedingTorrents is None or len(seedingTorrents) <= num:
-            return seedingTorrents
-        return seedingTorrents[:num]
+		# Make sure the call worked
+		response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
 
-        
-    def getFinishedSeeding(self, num=None):
-        '''
-        Returns a list of torrents that are finished seeding
+		return bool(transmissionResponseCode == Responses.success)
 
-        Takes:
-            num - Int, the number of torrents to return
-        '''
-        torrents = self.getSeeding()
-        finishedSeeding = []
 
-        for torrent in torrents:
-            if torrent.isFinished():
-                finishedSeeding.append(torrent)
+	def restart(self):
+		self.__transmissionInit(action='restart')
 
-        if num is None or len(finishedSeeding) <= num:
-            return finishedSeeding
-        return finishedSeeding[:num]
 
+	def start(self):
+		self.__transmissionInit(action='restart')
 
-    def setAltSpeed(self,enabled=False):
-        '''
-        Enables/Disables the altSpeed setting in transmission
 
-        Takes:
-            enabled - bool, True is ON, False is OFF
-
-        Returns:
-            bool, True if action completed
-        '''
-
-        # Method
-        commandJson = u'{"method":"session-set",'
-
-        # Arguments
-        commandJson += u'"arguments":{'
-
-        # Ids
-        commandJson += u'"alt-speed-time-enabled":{0}'.format(str(enabled).lower())
-
-        # Close Arguments
-        commandJson += u'"},'
-
-        # Tag (not strictly needed)
-        commandJson += u'"tag":{0}'.format(self.tagGenerator.next())+u'}'
-
-        # Make sure the call worked
-        response, httpResponseCode, transmissionResponseCode = self.__parseTransmissionResponse(commandJson)
-
-        if transmissionResponseCode == Responses.success:
-            return True
-        else:
-            return False
-
-            
-    def restart(self):
-        self.__transmissionInit(action=u'restart')
-
-        
-    def start(self):
-        self.__transmissionInit(action=u'restart')
-
-        
-    def stop(self):
-        self.__transmissionInit(action=u'restart')
+	def stop(self):
+		self.__transmissionInit(action='restart')

@@ -1,54 +1,63 @@
 #-------------------------------------------------------------------------------
-# Name:        UsedSpace
-# Purpose:     Returns the used space in a folder/drive in bytes
+# Name:		UsedSpace
+# Purpose:	Returns the used space in a folder/drive in bytes
 #
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 import ctypes, platform, subprocess, re, math
 
-def check(folder,size=u'G'):
-    ''' Return folder/drive used space (in bytes) '''
+# Logging
+from flannelfox import logging
 
-    # format the response in the desired size
-    if size == u'B': #Byte
-        divisor = 1/1024.0
-    if size == u'K': #KiloByte
-        divisor = 1024.0
-    if size == u'M': #MegaByte
-        divisor = 1024.0**1
-    if size == u'G': #GigaByte
-        divisor = 1024.0**2
-    if size == u'T': #TeraByte
-        divisor = 1024.0**3
+def check(folder,size='G'):
+	''' Return folder/drive used space (in bytes) '''
+
+	logger = logging.getLogger(__name__)
+
+	# format the response in the desired size
+	if size == 'B': #Byte
+		divisor = 1/1024.0
+	if size == 'K': #KiloByte
+		divisor = 1024.0
+	if size == 'M': #MegaByte
+		divisor = 1024.0**1
+	if size == 'G': #GigaByte
+		divisor = 1024.0**2
+	if size == 'T': #TeraByte
+		divisor = 1024.0**3
 
 
-    try:
+	logger.debug('Checking Space on: {0}'.format(folder))
 
-        # TODO: figure out how to measure used space in windows, This does not work
-        if platform.system() == u'Windows':
-            return 2000
-            freeBytes = ctypes.c_ulonglong(0)
-            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
-            ctypes.windll.kernel32.GetDisk
-            GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
-            return freeBytes.value/divisor
-        else:
-        # TODO: Change this to walk the directory and add up the sizes, we want
-        # this to be all python after all
+	try:
 
-            response,error = subprocess.Popen(['du','-s',folder], stdout=subprocess.PIPE).communicate()
+		# TODO: figure out how to measure used space in windows, This does not work
+		if platform.system() == u'Windows':
+			return 2000
+			freeBytes = ctypes.c_ulonglong(0)
+			ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
+			ctypes.windll.kernel32.GetDisk
+			GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(freeBytes))
+			return freeBytes.value/divisor
+		else:
+		# TODO: Change this to walk the directory and add up the sizes, we want
+		# this to be all python after all
 
-            if error is not None:
-                raise ValueError
+			response, error = subprocess.Popen(['du','-s',folder], stdout=subprocess.PIPE).communicate()
 
-            usedspace = re.match(ur'(?P<size>\d+)',response)
-            usedspace = int(usedspace.group('size'))/divisor
-            usedspace = int(math.ceil(usedspace))
+			response = response.decode('utf-8')
 
-            return usedspace
+			if error is not None:
+				raise ValueError
 
-    except ValueError as e:
-        # TODO: This should not happen, but if it does let's alert someone that
-        # it did. We will return 0 since we did not get a number
-        return 0
+			usedspace = re.match(r'^(?P<size>\d+)', response)
+			usedspace = int(usedspace.group('size'))/divisor
+			usedspace = int(math.ceil(usedspace))
+
+			return usedspace
+
+	except ValueError as e:
+		# TODO: This should not happen, but if it does let's alert someone that
+		# it did. We will return 0 since we did not get a number
+		return 0

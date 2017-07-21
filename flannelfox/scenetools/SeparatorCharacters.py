@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:        SeparatorCharacters
+# Name:		SeparatorCharacters
 # Purpose:
 #
 # TODO: Fill out the complete purpose for this module
@@ -14,25 +14,27 @@ list of characters that should be removed from string as they are normally
 padding. These are separate as they require escaping in regex.
 '''
 
-SeparatorSpecialCharacters = [u".", u"|", u", ", u"[", u"]", u"(", u")", u"{", u"}", u"-", u"\""]
+SeparatorSpecialCharacters = ['.', '|', '-']
 
 # list of characters, should not include regex entries that require escaping
-SeparatorCharacters = [u"_", u" "]
+SeparatorCharacters = ['_', ' ']
 
 '''
 Convert SeparatorCharacters and pre-escaped SeparatorSpecialCharacters into a
 list of Regex ready characters.
 '''
 SeparatorCharactersRegex = []
+
 for char in SeparatorSpecialCharacters:
-    SeparatorCharactersRegex.append(u"\\{0}".format(char))
+	SeparatorCharactersRegex.append('\\{0}'.format(char))
+
 for char in SeparatorCharacters:
-    SeparatorCharactersRegex.append(char)
+	SeparatorCharactersRegex.append(char)
 
 # Compiled SeparatorCharacters
-SeparatorCharactersRegexCompiled = re.compile(ur"["+ur"".join(SeparatorCharactersRegex)+ur"]+")
+SeparatorCharactersRegexCompiled = re.compile(r'['+r''.join(SeparatorCharactersRegex)+r']+')
 
 # String of chars
-SeparatorCharactersRegexStr = ur"".join(SeparatorCharactersRegex)
-SeparatorCharactersStr = ur"".join(SeparatorCharacters)
-SeparatorSpecialCharactersStr = ur"".join(SeparatorSpecialCharacters)
+SeparatorCharactersRegexStr = r''.join(SeparatorCharactersRegex)
+SeparatorCharactersStr = r''.join(SeparatorCharacters)
+SeparatorSpecialCharactersStr = r''.join(SeparatorSpecialCharacters)

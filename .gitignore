@@ -1,3 +1,6 @@
 *.pyc
 /dist
 flannelfox.egg-info
+/.flannelfox/cache
+/.flannelfox/logs
+/.flannelfox/flannelfox.db

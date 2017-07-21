@@ -1,0 +1,64 @@
+[
+  {
+    "username": "some-user",
+    "list_name": "albums-cd",
+    "api_key":"00000000",
+    "type": "music",
+    "feedDestination": "finished/music",
+    "minorFeeds": [
+        {
+            "url": "http://site.com/rss",
+            "minTime": "24",
+            "minRatio": "1.5"
+        },
+        {
+            "url": "http://site2.com/rss",
+            "minTime": "72",
+            "minRatio": "1.5"
+        },
+        {
+            "url": "http://site2.com/rss?somefiler=1",
+            "minTime": "24",
+            "minRatio": "1.5"
+        }
+    ],
+    "filters": [
+      {
+        "exclude": [
+          {"artist": "various artists"},
+          {"artist": "various"},
+          {"source": "vinyl"},
+          {"source": "soundboard"},
+          {"source": "sacd"},
+          {"source": "dat"},
+          {"source": "cassette"},
+          {"source": "bluray"}
+        ],
+        "include": [
+          {"quality": "v0vbr"},
+          {"codec": "mp3"},
+          {"releaseType":"album"},
+          {"wordMatch":"2018"}
+        ]
+      },
+      {
+        "exclude": [
+          {"artist": "various artists"},
+          {"artist": "various"},
+          {"source": "vinyl"},
+          {"source": "soundboard"},
+          {"source": "sacd"},
+          {"source": "dat"},
+          {"source": "cassette"},
+          {"source": "bluray"}
+        ],
+        "include": [
+          {"quality": "v0vbr"},
+          {"codec": "mp3"},
+          {"releaseType":"album"},
+          {"wordMatch":"2017"}
+        ]
+      }
+    ]
+  }
+]

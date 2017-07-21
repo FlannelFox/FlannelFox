@@ -1,0 +1,52 @@
+[
+    {
+        "list_name":"Somesite TV",
+        "type": "tv",
+        "feedDestination": "finished/tv",
+        "minorFeeds": [
+            {
+                "url":"http://somesite.com/rss",
+                "minRatio": "1.5",
+                "minTime": "24"
+            }
+        ],
+        "filters":[
+            {
+                "exclude":[
+                    {"codec": "xvid"},
+                    {"codec": "x264-hi10p"}
+                ],
+                "include":[
+                    {"title": "some title"},
+                    {"quality": "720p"},
+                    {"container": "mkv"}
+                ]
+            }
+        ]
+    },
+    {
+        "list_name":"Somesite TV2",
+        "type": "tv",
+        "feedDestination": "finished/tv",
+        "minorFeeds": [
+            {
+                "url":"http://somesite.com/rss",
+                "minRatio": "1.5",
+                "minTime": "24"
+            }
+        ],
+        "filters":[
+            {
+                "exclude":[
+                    {"codec": "xvid"},
+                    {"codec": "x264-hi10p"}
+                ],
+                "include":[
+                    {"title": "some title"},
+                    {"quality": "720p"},
+                    {"container": "mkv"}
+                ]
+            }
+        ]
+    }
+]

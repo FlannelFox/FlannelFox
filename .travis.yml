@@ -1,0 +1,16 @@
+language: python
+
+python:
+  - 3.5
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libxml2-dev
+
+install:
+  - pip install -r requirements.txt
+
+script:
+  - export FF_ROOT="."
+  - export PYTHONWARNINGS=ignore
+  - python -m unittest discover

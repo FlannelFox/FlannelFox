@@ -1,68 +1,92 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python3
 #-------------------------------------------------------------------------------
-# Name:        logging
-# Purpose:     Used to uniformly creat logs for our modules
+# Name:		logging
+# Purpose:	Used to uniformly creat logs for our modules
 #
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
-import logging, logging.handlers, os
-import flannelfox
-
-# Add some custom log levels
-THREADINGINFO = 15
-THREADINGDEBUG = 5
-logging.addLevelName(THREADINGINFO, "THREADINGINFO")
-logging.addLevelName(THREADINGDEBUG, "THREADINGDEBUG")
-
-def threadingInfo(self, msg, *args, **kws):
-    if self.isEnabledFor(THREADINGINFO):
-        self._log(THREADINGINFO, msg, args, **kws)
-
-def threadingDebug(self, msg, *args, **kws):
-    if self.isEnabledFor(THREADINGDEBUG):
-        self._log(THREADINGDEBUG, msg, args, **kws)
-
-logging.Logger.threadingInfo = threadingInfo
-logging.Logger.threadingDebug = threadingDebug
+import logging, logging.handlers
+import flannelfox.debuglevels, flannelfox.settings
+import os
 
 handles = {};
 
-def getLogger(name=''):
+def __init():
+	# Add some custom log levels
+	THREADINGINFO = flannelfox.debuglevels.levels["THREADINGINFO"]
+	THREADINGDEBUG = flannelfox.debuglevels.levels["THREADINGDEBUG"]
 
-    logger = logging.getLogger(name)
-    logger.propagate = False
+	def threadingInfo(self, msg, *args, **kws):
+		if self.isEnabledFor(THREADINGINFO):
+			self._log(THREADINGINFO, msg, args, **kws)
 
-    # Setup the logging agent that will rotate each day
-    if name not in handles:
+	def threadingDebug(self, msg, *args, **kws):
+		if self.isEnabledFor(THREADINGDEBUG):
+			self._log(THREADINGDEBUG, msg, args, **kws)
 
-        # Format the logs like this
-        logFormatting = logging.Formatter("[{0}][%(asctime)s.%(msecs)03d] %(message)s".format(name), "%H%M%S")
-
-        # Setup a filter to limit the scope of the logs
-        logFilter = logging.Filter(name)
-
-        logger.setLevel(flannelfox.debuglevels.getLevel())
-        
-        handles[name] = logging.handlers.TimedRotatingFileHandler(
-            os.path.join(
-                flannelfox.settings['files']['privateDir'],
-                name+'.log'
-            ),
-            when='d',
-            interval=1,
-            backupCount=1
-        )
+	logging.addLevelName(THREADINGINFO, "THREADINGINFO")
+	logging.addLevelName(THREADINGDEBUG, "THREADINGDEBUG")
+	logging.Logger.threadingInfo = threadingInfo
+	logging.Logger.threadingDebug = threadingDebug
 
 
-        handles[name].setFormatter(logFormatting)
+def __getLogDir():
+	return flannelfox.settings.getSettings()['files']['logDir']
 
-        handles[name].addFilter(logFilter)
 
-        logger.addHandler(handles[name])
+def getLogger(name='flannelfox'):
 
-    return logger
+	try:
 
-def getFileHandle(name=''):
-    return handles[name]
+		logger = logging.getLogger(name)
+		logger.propagate = False
 
+		# Setup the logging agent that will rotate each day
+		if name not in handles:
+
+			# Format the logs like this
+			logFormatting = logging.Formatter("[{0}][%(asctime)s.%(msecs)03d] %(message)s".format(name), "%H%M%S")
+
+			# Setup a filter to limit the scope of the logs
+			logFilter = logging.Filter(name)
+
+			logger.setLevel(flannelfox.debuglevels.getLevel())
+
+			logFile = os.path.join(
+				__getLogDir(),
+				name+'.log'
+			)
+
+			logDir = os.path.join(
+				__getLogDir()
+			)
+
+			if not os.path.exists(logDir):
+				os.makedirs(logDir)
+
+			handles[name] = logging.handlers.TimedRotatingFileHandler(
+				logFile,
+				when='d',
+				interval=1,
+				backupCount=1
+			)
+
+			handles[name].setFormatter(logFormatting)
+
+			handles[name].addFilter(logFilter)
+
+			logger.addHandler(handles[name])
+
+		return logger
+
+	except Exception:
+		raise ValueError('Could not create a logging instance')
+
+def getFileHandle(name='flannelfox'):
+	if name not in handles.keys():
+		raise KeyError
+
+	return handles[name]
+
+__init()

@@ -4,11 +4,14 @@ FlannelFox is a Python application that can monitor a torrent client and perform
 * Manage how many torrents are running at a time
 * Automatically load torrents from RSS feeds based on user defined filters
 
+![Status](https://img.shields.io/badge/status-beta-yellow.svg?style=plastic)
+[![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg?style=plastic)](https://www.python.org/downloads/release/python-350/)
 [![GitHub license](https://img.shields.io/github/license/FlannelFox/FlannelFox.svg?style=plastic)](https://github.com/FlannelFox/FlannelFox/blob/master/License.md)
-[![Github All Releases](https://img.shields.io/github/downloads/FlannelFox/FlannelFox/total.svg?style=plastic)](https://github.com/FlannelFox/FlannelFox)
 [![Issues in Ready](https://badge.waffle.io/FlannelFox/FlannelFox.png?label=ready&title=Ready)](https://waffle.io/FlannelFox/FlannelFox)
+[![Build Status](https://img.shields.io/travis/FlannelFox/FlannelFox/testing-enabled.svg?style=plastic)](https://travis-ci.org/FlannelFox/FlannelFox)
+[![Codacy branch grade](https://img.shields.io/codacy/grade/b858b0bf090e4a59964b89d5dd89db87/testing-enabled.svg?style=plastic)](https://www.codacy.com/app/FlannelFox/FlannelFox/dashboard)
 
-#What will it download and how does it know what I want?
+# What will it download and how does it know what I want?
 FlannelFox uses a set of JSON files (.json) that allow you to let it know what you want in three (3) ways:
 
 * **Trakt.TV list monitoring** - You can create rule sets in the `~/.flannelfox/config/feeds/traktfeeds` folder that will monitor [Trakt.TV](http://Trakt.TV) lists (public lists only at the moment) you specify for things you want. For best results make sure to only add movies OR tv series entries to your lists, episodes can cause issues in some instances. Make sure you register for an API key to use.
@@ -20,7 +23,7 @@ FlannelFox uses a set of JSON files (.json) that allow you to let it know what y
 [Example config files](#example-config-files)
 
 
-#How do I edit these files and what type of filtering can I do?
+# How do I edit these files and what type of filtering can I do?
 The filtering engine is fairly robust and as such can take a number of different items depending on the feed type chosen. The feed types and keywords each uses are:
 * [tv](#tv)
 * [movie](#movie)
@@ -28,77 +31,57 @@ The filtering engine is fairly robust and as such can take a number of different
 * [other](#other)
 
 
-#Where does all the torrent information get stored?
+# Where does all the torrent information get stored?
 This is something that can be configured, but by default a sqlite3 database is used to track all the data. The database can be found at ```~/.flannelfox/flannelfox.db```
 
 
-#Requirements/Dependencies
-Python 2.7
+# Requirements/Dependencies
+Python 3.5
 * requests
-* beautifulsoup4
-* chardet
-* pyOpenSSL
-* ndg-httpsclient
-* pyasn1
-* python-daemon
+* bs4
 * lxml
-* urllib3
+* python-daemon-3K
 
 
-#Setup information
+# Setup information
 ---------------
 
 
-##Virtualenv
+## Virtualenv
 FlannelFox can and should be run from a virtualenv setup to ensure that dependancies are met and do not clash with other packages, the install in a virtualenv setup is very similar, just minus the ```--prefix=~/.local``` switches.
 
 ```
-#Setup the virtual environment
+# Setup environmental variables, this example assumes python3.5 is used
+$ > export PYTHONPATH=$PYTHONPATH:~/flannelfox-env/dist-packages/lib/python3.5/site-packages/
+
+# Setup the virtual environment
 $ > virtualenv flannelfox-env
 $ > cd flannelfox-env
+$ > source bin/activate
 
-#Download and extract flannelfox
-flannelfox-env $ > wget https://github.com/FlannelFox/FlannelFox/archive/master.zip -O flannelfox.zip
-flannelfox-env $ > unzip -o flannelfox.zip
+# Download and extract flannelfox
+$ > wget https://github.com/FlannelFox/FlannelFox/archive/master.zip -O flannelfox.zip
+$ > unzip -o flannelfox.zip
 
-#Build/Install FlannelFox
-$flannelfox-env $ > cd FlannelFox-master
-$flannelfox-env/FlannelFox-master $ > python setup.py install
+# Build/Install FlannelFox
+$ > cd FlannelFox-master
+$ > flannelfox-env/FlannelFox-master $ > python setup.py install --prefix=~/flannelfox-env
 
-#Starting FlannelFox
-$flannelfox-env/FlannelFox-master $ > cd ..
-$flannelfox-env $ > ./flannelfox-init start
+# Starting FlannelFox
+$ > cd ..
+$ > ./flannelfox-init start
 ```
 
-
-##Non Virtualenv setup
-
-This setup section assumes you want to install flannelfox as a user without privilages to install to system-wide locations.
-```
-#Create .local to install as a user
-$ > mkdir -p ~/.local/lib/python2.7/site-packages
-
-#Add ~/.local/bin to your path
-$ > echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
-
-#Build/Install FlannelFox
-$ > python setup.py install --prefix=~/.local
-
-#Starting FlannelFox
-$ > flannelfox-init start
-```
-
-
-#Submissions
+# Submissions
 ---------------
 I am open for help and changes on this project, just make sure it is submitted in the form of a pull request and that it has been squashed/flattened into a single commit. To see the features that are needing a bit of love check the [help wanted](https://github.com/FlannelFox/FlannelFox/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) page.
 
 
-#Matching Keywords
+# Matching Keywords
 ---------------
 Keywords are how the application knows what you want it to grab for you. You can mix and match keywords in both the include and exclude areas of the config files.
 
-##TV
+## TV
 * wordMatch - matches an exact word/phrase in the torrent name.
 * wordMatchStrict - matches an exact word/phrase in the torrent name while taking letter case into consideration.
 * title - matches an exact title to the data extracted from the torrent name.
@@ -158,12 +141,12 @@ Keywords are how the application knows what you want it to grab for you. You can
     * pdtv
 
 
-##Movie
+## Movie
 Movies have many of the same filters as TV with a couple of exceptions; episode and season flags are not valid and a new flag called year is added.
     * year - matches a specific year to the data extracted from the torrent name.
 
 
-##Music
+## Music
 * wordMatch - matches an exact word/phrase in the torrent name.
 * wordMatchStrict - matches an exact word/phrase in the torrent name while taking letter case into consideration.
 * title - matches an exact title to the data extracted from the torrent name.
@@ -215,14 +198,14 @@ Movies have many of the same filters as TV with a couple of exceptions; episode 
     * bluray
 
 
-##Other
+## Other
 This is achieved by leaving the type section empty ""
 
 * wordMatch - matches an exact word/phrase in the torrent name.
 * wordMatchStrict - matches an exact word/phrase in the torrent name while taking letter case into consideration.
 
 
-##Example config files
+## Example config files
 ---------------
 * Custom Config
     * [Get only the first five (5) episodes of a new series' first season.](#get-only-the-first-five-5-episodes-of-a-new-series-first-season)
@@ -235,8 +218,8 @@ This is achieved by leaving the type section empty ""
     * [Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.](#library-monitoring-config-file-to-grab-all-releases-that-match-your-library-that-are-mp3v0vbr-and-the-source-is-a-cd)
 
 
-###Custom Config
-####Get only the first five (5) episodes of a new series' first season.
+### Custom Config
+#### Get only the first five (5) episodes of a new series' first season.
 ```
 [
     {
@@ -290,7 +273,7 @@ This is achieved by leaving the type section empty ""
 ```
 
 
-####Get only shows with the word "Boogieman" in the title that are 720p quality and mkv container
+#### Get only shows with the word "Boogieman" in the title that are 720p quality and mkv container
 ```
 [
     {
@@ -321,7 +304,7 @@ This is achieved by leaving the type section empty ""
 ```
 
 
-####Get a show called fakeworld but do not match the aftershow episode
+#### Get a show called fakeworld but do not match the aftershow episode
 ```
 [
     {
@@ -354,8 +337,8 @@ This is achieved by leaving the type section empty ""
 
 ```
 
-###Trakt.TV
-####List monitoring config file to monitor a list called "your-list-name" and auto pull shows that are 720p quality and match the titles in the list.
+### Trakt.TV
+#### List monitoring config file to monitor a list called "your-list-name" and auto pull shows that are 720p quality and match the titles in the list.
 ```
 [
   {
@@ -394,7 +377,7 @@ This is achieved by leaving the type section empty ""
 ```
 
 
-####List monitoring config file to monitor a list called "your-list-name-partial" and auto pull shows that are 720p quality and paritally match the title.
+#### List monitoring config file to monitor a list called "your-list-name-partial" and auto pull shows that are 720p quality and paritally match the title.
 ```
 [
   {
@@ -435,8 +418,8 @@ This is achieved by leaving the type section empty ""
 ```
 
 
-###Last.FM Config
-####Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.
+### Last.FM Config
+#### Library monitoring config file to grab all releases that match your library that are mp3/v0vbr and the source is a cd.
 ```
 [
   {

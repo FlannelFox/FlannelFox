@@ -1,0 +1,26 @@
+[
+  {
+    "username": "goodreads-userid",
+    "api_key": "apikey",
+    "type": "ebook",
+    "list_name": "my-fav-authors2",
+    "feedDestination": "finished/ebooks",
+    "minorFeeds": [
+      {
+        "url": "http://site.com/rss",
+        "minTime": "24",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss",
+        "minTime": "72",
+        "minRatio": "1.5"
+      },
+      {
+        "url": "http://site2.com/rss?somefiler=1",
+        "minTime": "24",
+        "minRatio": "1.5"
+      }
+    ]
+  }
+]
