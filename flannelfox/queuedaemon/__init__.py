@@ -65,7 +65,7 @@ class QueueReader():
 			self.logger.error('Could not create torrent client: {0}'.format(e))
 			return None
 
-		if torrentClient == None:
+		if self.torrentClient == None:
 			self.logger.error('No client was configured to monitor!')
 			return None
 
