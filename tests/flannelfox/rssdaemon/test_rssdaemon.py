@@ -1673,7 +1673,7 @@ class TestRssDaemon(unittest.TestCase):
 
 	def test_readRSSFeed(self):
 
-		testRssFeed = 'https://github.com/FlannelFox/FlannelFox/commits/testing-enabled.atom'
+		testRssFeed = 'https://github.com/FlannelFox/FlannelFox/commits/master.atom'
 
 		response, httpCode, encoding = rssdaemon.readRSSFeed(testRssFeed)
 
