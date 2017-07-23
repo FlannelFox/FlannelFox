@@ -286,7 +286,7 @@ def __queueReader():
 	queueReader.addTorrentsAndRemoveFinished()
 
 
-	logger.debug('Downloading: {0} | Seeding: {1} | Total: {2}'.format(
+	logger.info('Downloading: {0} | Seeding: {1} | Total: {2}'.format(
 		len(queueReader.torrentClient.getDownloading()),
 		len(queueReader.torrentClient.getSeeding()),
 		len(queueReader.torrentClient.getQueue())
