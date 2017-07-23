@@ -297,10 +297,11 @@ def rssReader():
 
 		# Log the number of records processed
 		logger.info('Processed {0} items in {1:.2f} second(s)'.format(totalProcessed, time.time() - startTime))
+		if len(rssTorrents) > 0:
+			logger.info('Found {0} new items'.format(len(rssTorrents)))
 
 		# Write matching filters to database
 		logger.debug('Writing {0} Torrents to DB'.format(len(rssTorrents)))
-
 		rssTorrents.writeToDB()
 
 		# Garbage collection
