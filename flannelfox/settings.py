@@ -47,34 +47,30 @@ KEYWORD_SYNONYMS = OrderedDict([
 # This is a list of properties that are ignored during torrent comparison
 FUZZY_PROPERTIES = [
 
-# Properties that should be ignored, rss fields that should not be considered
-# when matching.
+# Properties ignored in a comparison, in order to achieve a preference
+# of certain quality then you need to make the source feed "upgradable"
 	'quality',
 	'source',
 	'container',
 	'codec',
 
-# Properties that should be ignored, rss fields that do not pertain to matching
+# Properties ignored due to being related to RSS
 	'torrentTitle',
 	'url',
+
+# Properties ignored due to being related to storage
 	'feedDestination',
 
-# More properties that should be ignored, database fields that do not pertain to
-# matching
-
+# Properties ignored due to being based on ratio/timing
 	'addedOn',
 	'added',
 	'queuedOn',
 	'minTime',
 	'minRatio',
 	'comparison',
-	# DUPLICATE	'feedDestination',
 	'hashString',
 
-# More properties that should be ignored, transmission response fields that do
-# not pertain to matching
-
-	# DUPLICATE	'hashString',
+# Properties ignored due to being based on transmission responses
 	'id',
 	'error',
 	'errorString',
@@ -85,7 +81,6 @@ FUZZY_PROPERTIES = [
 	'rateUpload',
 	'downloadDir',
 	'seedTime',
-	# DUPLICATE	'comparison',
 	'status'
 ]
 

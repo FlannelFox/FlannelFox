@@ -113,7 +113,9 @@ def parseMetaData(meta):
 		return metaData
 
 	meta = meta.lower()
-	meta = meta.replace('.', ' ').replace('[', ' ').replace(']', ' ')
+	for ch in ('.', '[', ']', '(', ')', '{', '}', '-'):
+		meta = meta.replace(ch, ' ')
+
 	meta = ' {0} '.format(meta.strip())
 
 	for quality in AudioProperties.Quality:

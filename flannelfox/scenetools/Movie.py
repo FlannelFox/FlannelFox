@@ -112,7 +112,7 @@ def parseMetaData(meta):
 		return metaData
 
 	meta = meta.lower()
-	for ch in ('.', '[', ']', '-'):
+	for ch in ('.', '[', ']', '(', ')', '{', '}', '-'):
 		meta = meta.replace(ch, ' ')
 
 	meta = ' {0} '.format(meta.strip())

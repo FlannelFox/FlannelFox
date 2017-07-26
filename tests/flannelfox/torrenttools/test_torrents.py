@@ -107,7 +107,7 @@ class TestTorrents(unittest.TestCase):
                 TV(torrentTitle='some.show.s01e01.{720p}.junk.here')
             ),
             (
-                {'title': 'some show', 'season': '1', 'episode': '1', 'quality': '720p', 'codec': 'x264'},
+                {'title': 'some show', 'season': '1', 'episode': '1', 'quality': '720p', 'codec': 'h264'},
                 TV(torrentTitle='some.show.s01e01.720p.x264.junk.here')
             )
         ]
@@ -118,11 +118,11 @@ class TestTorrents(unittest.TestCase):
     def test_MovieTorrent(self):
         testCases = [
             (
-                {'title': 'some show', 'year': '2009', 'codec':'x264', 'quality':'720p'},
+                {'title': 'some show', 'year': '2009', 'codec':'h264', 'quality':'720p'},
                 Movie(torrentTitle='some.show.2009.x264.720p')
             ),
             (
-                {'title': 'some show', 'year': '2009', 'codec':'x264', 'quality':'720p'},
+                {'title': 'some show', 'year': '2009', 'codec':'h264', 'quality':'720p'},
                 Movie(torrentTitle='some.show.(2009).x264.720p')
             )
         ]
