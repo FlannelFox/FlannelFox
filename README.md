@@ -438,9 +438,6 @@ This is achieved by leaving the type section empty ""
 		],
 		"filters": [
 			{
-				"exclude": [
-					{ "wordMatch": "scene" }
-				],
 				"include": [
 					{ "source": "cd" },
 					{ "quality": "v0vbr" },
