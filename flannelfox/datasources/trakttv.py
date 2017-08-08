@@ -209,11 +209,16 @@ def readTraktTvConfigs(configFolder=settings['files']['traktConfigDir']):
 
 							item = item['show']
 							title = item['title'].lower().strip().replace(' & ', ' and ')
+							for ch in (':', '\\', '\'', ','):
+								title = title.replace(ch, '')
 
 						elif 'movie' in item and feedType == 'movie':
 
 							item = item['movie']
 							title = item['title'].lower().strip().replace(' & ', ' and ')
+							for ch in (':', '\\', '\'', ','):
+								title = title.replace(ch, '')
+
 							year = str(item['year']).strip()
 
 						else:

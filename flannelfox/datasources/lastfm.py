@@ -208,6 +208,8 @@ def readLastfmArtistsConfigs(configFolder=settings['files']['lastfmConfigDir']):
 
 							# Clean the artist name
 							item = item.lower().strip().replace(' & ', ' and ')
+							for ch in (':', '\\', '\'', ','):
+								item = item.replace(ch, '')
 
 							ruleList.append({'key':'artist', 'val':item, 'exclude':False})
 

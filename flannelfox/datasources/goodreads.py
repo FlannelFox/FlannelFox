@@ -61,6 +61,9 @@ class goodreadsApi():
 
 								name = name.strip()
 								name = name.replace(' & ',' and ')
+								for ch in (':', '\\', '\'', ','):
+									name = name.replace(ch, '')
+
 								goodreadsListResults.append(name)
 
 							else:
