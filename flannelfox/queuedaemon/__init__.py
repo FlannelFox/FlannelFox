@@ -58,7 +58,7 @@ class QueueReader():
 		# Try to create a torrent client instance
 		try:
 			if settings['client']['type'] == 'transmission':
-				logger.debug("Creating Transmission Client");
+				self.logger.debug("Creating Transmission Client");
 				return TorrentClient()
 
 		except Exception as e:
@@ -278,11 +278,22 @@ def __queueReader():
 
 	queueReader = QueueReader()
 
+	logger.debug('Checking Sub Freespace')
 	queueReader.checkSubDirectoryFreeSpace()
+
+	logger.debug('Checking Main Directory Freespace')
 	queueReader.checkMainDirectoryFreeSpace()
+
+	logger.debug('Checking Queue Size')
 	queueReader.checkQueueSize()
+
+	logger.debug('Checking Finished Torrents')
 	queueReader.checkFinishedTorrents()
+
+	logger.debug('Adding Torrents')
 	queueReader.addTorrents()
+
+	logger.debug('Adding Torrents and Removing Finished')
 	queueReader.addTorrentsAndRemoveFinished()
 
 

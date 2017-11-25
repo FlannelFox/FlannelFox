@@ -63,7 +63,7 @@ class lastfmApi():
 
 			except Exception:
 				httpResponse = -1
-				logger.error('There was a problem fetching a Lastfm album page\n{0}'.format(httpResponse))
+				self.logger.error('There was a problem fetching a Lastfm album page\n{0}'.format(httpResponse))
 				return artists
 
 

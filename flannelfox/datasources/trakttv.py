@@ -199,11 +199,11 @@ def readTraktTvConfigs(configFolder=settings['files']['traktConfigDir']):
 
 						if 'show' not in item and feedType == 'tv':
 							# This happens if you select the wrong type of media tv/movie
-							raise ValueError('Media type is not show, but feed type is tv')
+							raise ValueError('Media type is not show, but feed type is tv {0}'.format(title))
 
 						elif 'movie' not in item and feedType == 'movie':
 							# This happens if you select the wrong type of media tv/movie
-							raise ValueError('Media type is not movie, but feed type is movie')
+							raise ValueError('Media type is not movie, but feed type is movie {0}'.format(title))
 
 						elif 'show' in item and feedType == 'tv':
 

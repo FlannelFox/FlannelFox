@@ -15,6 +15,8 @@ from flannelfox import logging
 
 
 def getConfigFiles(directory):
+
+	logger = logging.getLogger(__name__)
 	configFiles = []
 
 	if os.path.isdir(directory):
