@@ -85,25 +85,25 @@ class QueueReader():
 				destination = 'U:'
 
 
-			finishedTorrents = self.torrentClient.getFinishedSeeding()
-
-			while FreeSpace.check(destination,'M') < settings['minimumFreeSpace'] and len(finishedTorrents) > 0:
-
-				self.logger.info('Freeing up space in destination: [{0}|{1}]'.format(
-					destination,
-					FreeSpace.check(destination,'M'))
-				)
-
-				# Stop a finished torrent
-				finishedTorrent = finishedTorrents.pop()
-				self.torrentClient.deleteTorrent(
-					hashString=finishedTorrent['hashString'],
-					reason='Freespace Needed (minimumFreeSpace)'
-				)
-
-				self.torrentClient.updateQueue()
+			while FreeSpace.check(destination,'M') < settings['minimumFreeSpace']:
 
 				finishedTorrents = self.torrentClient.getFinishedSeeding()
+
+				if len(finishedTorrents) > 0:
+
+					self.logger.info('Freeing up space in destination: [{0}|{1}]'.format(
+						destination,
+						FreeSpace.check(destination,'M'))
+					)
+
+					# Stop a finished torrent
+					finishedTorrent = finishedTorrents.pop()
+					self.torrentClient.deleteTorrent(
+						hashString=finishedTorrent['hashString'],
+						reason='Freespace Needed (minimumFreeSpace)'
+					)
+
+					self.torrentClient.updateQueue()
 
 
 	def checkMainDirectoryFreeSpace(self):
@@ -111,23 +111,23 @@ class QueueReader():
 
 		if settings['maxUsedSpace'] > 0:
 
-			finishedTorrents = self.torrentClient.getFinishedSeeding()
-
-			while int(UsedSpace.check(settings['files']['maxUsedSpaceDir'],'G')) >= int(settings['maxUsedSpace']) and len(finishedTorrents) > 0:
-
-				self.logger.info('Freeing up space in destination: [{0}|{1}]'.format(
-					UsedSpace.check(settings['files']['maxUsedSpaceDir'],'G'),
-					settings['maxUsedSpace'])
-				)
-
-				# Stop a finished torrent
-				finishedTorrent = finishedTorrents.pop()
-
-				self.torrentClient.deleteTorrent(hashString=finishedTorrent['hashString'],reason='Freespace Needed (maxUsedSpace)')
-
-				self.torrentClient.updateQueue()
+			while int(UsedSpace.check(settings['files']['maxUsedSpaceDir'],'G')) >= int(settings['maxUsedSpace']):
 
 				finishedTorrents = self.torrentClient.getFinishedSeeding()
+
+				if len(finishedTorrents) > 0:
+
+					self.logger.info('Freeing up space in destination: [{0}|{1}]'.format(
+						UsedSpace.check(settings['files']['maxUsedSpaceDir'],'G'),
+						settings['maxUsedSpace'])
+					)
+
+					# Stop a finished torrent
+					finishedTorrent = finishedTorrents.pop()
+
+					self.torrentClient.deleteTorrent(hashString=finishedTorrent['hashString'],reason='Freespace Needed (maxUsedSpace)')
+
+					self.torrentClient.updateQueue()
 
 
 	def checkQueueSize(self):
