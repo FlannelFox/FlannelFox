@@ -291,8 +291,8 @@ def parseTitle(title):
 			if ch in videoProperties['title']:
 				videoProperties['title'] = videoProperties['title'].replace(ch, u'')
 
-		if 'tvTitleMappings' in settings.settings:
-			videoProperties['title'] = settings.settings['tvTitleMappings'].get(videoProperties['title'].lower(), videoProperties['title'])
+		# Strip white space from beginning and end
+		videoProperties['title'] = videoProperties['title'].strip()
 
 	if 'episode' in parsedData.groupdict():
 		if multiData: # if there is multiple episodes then collapse them into a single csv

@@ -206,6 +206,10 @@ class Generic():
 				for ch in (':', '\\', '\'', ','):
 					val = val.replace(ch, '')
 
+				if self.elements['torrentType'] == 'tv':
+					if 'tvTitleMappings' in settings.settings:
+						val = settings.settings['tvTitleMappings'].get(val.lower(), val)
+
 			self.elements[key] = val
 
 

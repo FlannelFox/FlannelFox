@@ -9,6 +9,7 @@ from flannelfox.settings import settings
 
 class TestRssDaemon(unittest.TestCase):
 
+	maxDiff = None
 
 	testRssDataTv = b'''<?xml version="1.0" encoding="utf-8"?>
 		<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -21,7 +22,7 @@ class TestRssDaemon(unittest.TestCase):
 				<docs>http://blogs.law.harvard.edu/tech/rss</docs>
 				<generator>RSS Gen</generator>
 				<item>
-					<title><![CDATA[Some Title - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ] ]]></title>
+					<title><![CDATA[Chicago P.D. - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ] ]]></title>
 					<description>TEST Description</description>
 					<pubDate>Fri, 27 Jan 2017 04:37:49 +0000</pubDate>
 					<link>https://somesite.com/link1</link>
@@ -30,7 +31,7 @@ class TestRssDaemon(unittest.TestCase):
 					<dc:creator>Anonymous</dc:creator>
 				</item>
 				<item>
-					<title><![CDATA[Some Title - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ] ]]></title>
+					<title><![CDATA[Chicago P.D. - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ] ]]></title>
 					<description>TEST Description</description>
 					<pubDate>Fri, 27 Jan 2017 04:37:49 +0000</pubDate>
 					<link>https://somesite.com/link1</link>
@@ -142,7 +143,7 @@ class TestRssDaemon(unittest.TestCase):
 			'feedFilters': [
 				[
 					{
-						'val': 'some title',
+						'val': 'chicago p.d.',
 						'exclude': False,
 						'key': 'title'
 					},
@@ -243,7 +244,7 @@ class TestRssDaemon(unittest.TestCase):
 			'feedFilters': [
 				[
 					{
-						'val': 'some title',
+						'val': 'chicago p.d.',
 						'exclude': False,
 						'key': 'title'
 					},
@@ -344,7 +345,7 @@ class TestRssDaemon(unittest.TestCase):
 			'feedFilters': [
 				[
 					{
-						'val': 'some title',
+						'val': 'chicago p.d.',
 						'exclude': False,
 						'key': 'title'
 					},
@@ -445,7 +446,7 @@ class TestRssDaemon(unittest.TestCase):
 			'feedFilters': [
 				[
 					{
-						'val': 'some title',
+						'val': 'chicago p.d.',
 						'exclude': False,
 						'key': 'title'
 					},
@@ -1403,7 +1404,7 @@ class TestRssDaemon(unittest.TestCase):
 				},
 				{
 				   "exclude":False,
-				   "val":"some title",
+				   "val":"chicago p.d.",
 				   "key":"title"
 				},
 				{
@@ -1445,7 +1446,7 @@ class TestRssDaemon(unittest.TestCase):
 				},
 				{
 				   "exclude":False,
-				   "val":"some title",
+				   "val":"chicago p.d.",
 				   "key":"title"
 				},
 				{
@@ -1487,7 +1488,7 @@ class TestRssDaemon(unittest.TestCase):
 				},
 				{
 				   "exclude":False,
-				   "val":"some title",
+				   "val":"chicago p.d.",
 				   "key":"title"
 				},
 				{
@@ -1529,7 +1530,7 @@ class TestRssDaemon(unittest.TestCase):
 				},
 				{
 				   "exclude":False,
-				   "val":"some title",
+				   "val":"chicago p.d.",
 				   "key":"title"
 				},
 				{
@@ -1695,8 +1696,8 @@ class TestRssDaemon(unittest.TestCase):
 
 
 		parsedResponse=[
-			{'minRatio': 0.0, 'minTime': 0, 'torrentType': 'tv', 'episode': '3', 'quality': '720p', 'title': 'some title', 'container': 'mkv', 'source': 'hdtv', 'torrentTitle': 'Some Title - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'codec': 'h264', 'comparison': 'or', 'url': 'https://somesite.com/link1', 'feedDestination': None, 'season': '2'},
-			{'minRatio': 0.0, 'minTime': 0, 'torrentType': 'tv', 'episode': '4', 'quality': '720p', 'title': 'some title', 'container': 'mkv', 'source': 'hdtv', 'torrentTitle': 'Some Title - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'codec': 'h264', 'comparison': 'or', 'url': 'https://somesite.com/link1', 'feedDestination': None, 'season': '1'}
+			{'minRatio': 0.0, 'minTime': 0, 'torrentType': 'tv', 'episode': '3', 'quality': '720p', 'title': 'chicago p.d.', 'container': 'mkv', 'source': 'hdtv', 'torrentTitle': 'Chicago P.D. - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'codec': 'h264', 'comparison': 'or', 'url': 'https://somesite.com/link1', 'feedDestination': None, 'season': '2'},
+			{'minRatio': 0.0, 'minTime': 0, 'torrentType': 'tv', 'episode': '4', 'quality': '720p', 'title': 'chicago p.d.', 'container': 'mkv', 'source': 'hdtv', 'torrentTitle': 'Chicago P.D. - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'codec': 'h264', 'comparison': 'or', 'url': 'https://somesite.com/link1', 'feedDestination': None, 'season': '1'}
 		]
 
 		results = rssdaemon.rssToTorrents(self.testRssDataTv, feedType='tv')
@@ -1732,7 +1733,7 @@ class TestRssDaemon(unittest.TestCase):
 				[
 					{
 						'key':'title',
-						'val':'some title',
+						'val':'chicago p.d.',
 						'exclude':False
 					}
 				]
@@ -1740,10 +1741,10 @@ class TestRssDaemon(unittest.TestCase):
 		}
 
 		processedResponse = [
-			{'torrentTitle': 'Some Title - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'some title', 'episode': '3', 'minTime': 72, 'season': '2', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
-			{'torrentTitle': 'Some Title - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'some title', 'episode': '4', 'minTime': 72, 'season': '1', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
-			{'torrentTitle': 'Some Title - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'some title', 'episode': '3', 'minTime': 72, 'season': '2', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
-			{'torrentTitle': 'Some Title - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Some.Title.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'some title', 'episode': '4', 'minTime': 72, 'season': '1', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'}
+			{'torrentTitle': 'Chicago P.D. - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'chicago p.d.', 'episode': '3', 'minTime': 72, 'season': '2', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
+			{'torrentTitle': 'Chicago P.D. - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'chicago p.d.', 'episode': '4', 'minTime': 72, 'season': '1', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
+			{'torrentTitle': 'Chicago P.D. - S02E03 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'chicago p.d.', 'episode': '3', 'minTime': 72, 'season': '2', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'},
+			{'torrentTitle': 'Chicago P.D. - S01E04 [ 2017 ] [ MKV | H.264 | HDTV | 720p | Scene | FastTorrent ] [ Uploader: Anonymous ]  [ Chicago.P.D.S02E03.INTERNAL.720p.HDTV.x264 ]', 'torrentType': 'tv', 'url': 'https://somesite.com/link1', 'minRatio': 1.0, 'feedDestination': 'finished/files', 'title': 'chicago p.d.', 'episode': '4', 'minTime': 72, 'season': '1', 'container': 'mkv', 'source': 'hdtv', 'codec': 'h264', 'quality': '720p', 'comparison': 'or'}
 		]
 
 		mock_readRSSFeed.return_value = (self.testRssDataTv, 200, 'utf-8')
