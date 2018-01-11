@@ -102,6 +102,15 @@ class TestRssDaemon(unittest.TestCase):
 					<comments>, Drama, sciencefiction, </comments>
 					<dc:creator>Anonymous</dc:creator>
 				</item>
+				<item>
+					<title><![CDATA[artist 2 - some other album [2018] [Album] - MP3 / V0 VBR / CD]]></title>
+					<description>TEST Description</description>
+					<pubDate>Fri, 27 Jan 2017 04:37:49 +0000</pubDate>
+					<link>https://somesite.com/link1</link>
+					<guid>https://somesite.com/link1</guid>
+					<comments>, Drama, sciencefiction, </comments>
+					<dc:creator>Anonymous</dc:creator>
+				</item>
 			</channel>
 		</rss>
 		'''

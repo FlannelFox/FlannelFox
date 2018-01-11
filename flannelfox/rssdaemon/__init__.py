@@ -202,17 +202,17 @@ def rssThread(majorFeed):
 					rssTorrents.append(torrent)
 
 
-				#	logger.debug('Matched Torrent: ')
-				#	logger.debug('======================')
-				#	logger.debug('{0}'.format(torrent))
-				#	logger.debug('======================')
+				logger.threadingDebug('Matched Torrent: ')
+				logger.threadingDebug('======================')
+				logger.threadingDebug('{0}'.format(torrent))
+				logger.threadingDebug('======================')
 				#else:
-				#	logger.debug('UnMatched Torrent: ')
-				#	logger.debug('======================')
-				#	logger.debug('{0}'.format(torrent))
-				#	logger.debug('======================')
-				#	logger.debug('{0}'.format(majorFeed['feedFilters']))
-				#	logger.debug('======================')
+				logger.threadingDebug('UnMatched Torrent: ')
+				logger.threadingDebug('======================')
+				logger.threadingDebug('{0}'.format(torrent))
+				logger.threadingDebug('======================')
+				logger.threadingDebug('{0}'.format(majorFeed['feedFilters']))
+				logger.threadingDebug('======================')
 
 
 		# Garbage Collection
