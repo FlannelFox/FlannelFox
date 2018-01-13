@@ -206,10 +206,6 @@ class Generic():
 				for ch in (':', '\\', '\'', ','):
 					val = val.replace(ch, '')
 
-				if self.elements['torrentType'] == 'tv':
-					if 'tvTitleMappings' in settings.settings:
-						val = settings.settings['tvTitleMappings'].get(val.lower(), val)
-
 			self.elements[key] = val
 
 
@@ -232,6 +228,8 @@ class Music(Generic):
 
 		self.populateProperties(metaData)
 
+		self.elements['title'] = '{0} - {1}'.format(self.elements['artist'], self.elements['album'])
+
 
 class TV(Generic):
 	'''
@@ -251,6 +249,9 @@ class TV(Generic):
 		   self.elements['torrentType'] = 'tv'
 
 		self.populateProperties(metaData)
+
+		if 'tvTitleMappings' in settings.settings:
+			self.elements['title'] = settings.settings['tvTitleMappings'].get(self.elements['title'].lower(), self.elements['title'])
 
 
 class Movie(Generic):
